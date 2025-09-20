@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { emailService } from "./services/emailService";
 import { smsService } from "./services/smsService";
 import { prescriptionService } from "./services/prescriptionService";
+import { storage } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -146,6 +147,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending telepharmacy summary:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Pharmacy endpoints
+  app.get("/api/pharmacy/categories", async (req, res) => {
+    try {
+      const categories = await storage.getPharmacyCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching pharmacy categories:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  app.get("/api/pharmacy/products", async (req, res) => {
+    try {
+      const { categoryId } = req.query;
+      
+      let products;
+      if (categoryId && typeof categoryId === 'string') {
+        products = await storage.getPharmacyProductsByCategory(categoryId);
+      } else {
+        products = await storage.getPharmacyProducts();
+      }
+      
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching pharmacy products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/pharmacy/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await storage.getPharmacyProduct(id);
+      
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching pharmacy product:", error);
+      res.status(500).json({ error: "Failed to fetch product" });
     }
   });
 

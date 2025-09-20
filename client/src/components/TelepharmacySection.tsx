@@ -1,10 +1,25 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DEMO_PRODUCTS } from "@/lib/i18n";
+
+interface PharmacyProduct {
+  id: string;
+  name: string;
+  nameDE?: string;
+  nameAR?: string;
+  description: string;
+  descriptionDE?: string;
+  descriptionAR?: string;
+  price: string;
+  currency: string;
+  stockQuantity: number;
+  activeIngredient?: string;
+  dosage?: string;
+  requiresPrescription: boolean;
+}
 
 interface TelepharmacySectionProps {
   contactData: {
@@ -21,6 +36,18 @@ export default function TelepharmacySection({ contactData, t }: TelepharmacySect
   const [cart, setCart] = useState<{ id: string; qty: number }[]>([]);
   const [summaryChannel, setSummaryChannel] = useState<"sms" | "whatsapp" | "email">("sms");
   const [summaryType, setSummaryType] = useState<"consultation" | "product" | "prescription">("product");
+
+  // Fetch pharmacy products from database
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ['/api/pharmacy/products'],
+    queryFn: async () => {
+      const response = await fetch('/api/pharmacy/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      return response.json() as Promise<PharmacyProduct[]>;
+    }
+  });
 
   const addToCart = (productId: string) => {
     setCart(prev => {
@@ -109,26 +136,60 @@ export default function TelepharmacySection({ contactData, t }: TelepharmacySect
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {DEMO_PRODUCTS.map((product) => (
-                  <div key={product.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-tablets text-muted-foreground"></i>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-foreground">{(product.name as any)[t.lang] || product.name.en}</h4>
-                        <Button
-                          size="sm"
-                          className="mt-2 bg-secondary hover:bg-secondary/90"
-                          onClick={() => addToCart(product.id)}
-                          data-testid={`button-add-${product.id}`}
-                        >
-                          {t.add}
-                        </Button>
+                {productsLoading ? (
+                  <div className="col-span-full text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p>Loading products...</p>
+                  </div>
+                ) : products.map((product) => {
+                  // Get localized product name based on current language
+                  const getProductName = () => {
+                    switch(t.lang) {
+                      case 'de': return product.nameDE || product.name;
+                      case 'ar': return product.nameAR || product.name;
+                      default: return product.name;
+                    }
+                  };
+
+                  const getProductDescription = () => {
+                    switch(t.lang) {
+                      case 'de': return product.descriptionDE || product.description;
+                      case 'ar': return product.descriptionAR || product.description;
+                      default: return product.description;
+                    }
+                  };
+
+                  return (
+                    <div key={product.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-tablets text-muted-foreground"></i>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-foreground">{getProductName()}</h4>
+                          {product.dosage && (
+                            <p className="text-sm text-muted-foreground">
+                              {product.activeIngredient} {product.dosage}
+                            </p>
+                          )}
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{getProductDescription()}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-sm font-medium">${product.price}</span>
+                            <Button
+                              size="sm"
+                              className="bg-secondary hover:bg-secondary/90"
+                              onClick={() => addToCart(product.id)}
+                              data-testid={`button-add-${product.id.replace(/[^a-z0-9]/gi, '_')}`}
+                              disabled={product.stockQuantity <= 0}
+                            >
+                              {product.stockQuantity <= 0 ? 'Out of Stock' : t.add}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Shopping Cart */}
@@ -140,18 +201,29 @@ export default function TelepharmacySection({ contactData, t }: TelepharmacySect
                   </h4>
                   <div className="space-y-2 mb-4" data-testid="cart-items">
                     {cart.map((item) => {
-                      const product = DEMO_PRODUCTS.find(p => p.id === item.id);
+                      const product = products.find(p => p.id === item.id);
+                      
+                      const getProductName = () => {
+                        if (!product) return item.id;
+                        switch(t.lang) {
+                          case 'de': return product.nameDE || product.name;
+                          case 'ar': return product.nameAR || product.name;
+                          default: return product.name;
+                        }
+                      };
+
                       return (
                         <div key={item.id} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-md">
                           <span className="text-sm">
-                            {product ? (product.name as any)[t.lang] || product.name.en : item.id} × {item.qty}
+                            {getProductName()} × {item.qty}
+                            {product && <span className="text-xs text-muted-foreground ml-2">${(parseFloat(product.price) * item.qty).toFixed(2)}</span>}
                           </span>
                           <Button
                             size="sm"
                             variant="ghost"
                             className="text-destructive hover:text-destructive/80 text-xs h-auto p-1"
                             onClick={() => removeFromCart(item.id)}
-                            data-testid={`button-remove-${item.id}`}
+                            data-testid={`button-remove-${item.id.replace(/[^a-z0-9]/gi, '_')}`}
                           >
                             Remove
                           </Button>
