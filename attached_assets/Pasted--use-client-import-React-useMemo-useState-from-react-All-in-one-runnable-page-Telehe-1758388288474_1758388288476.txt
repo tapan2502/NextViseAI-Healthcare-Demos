@@ -1,0 +1,421 @@
+"use client";
+import React, { useMemo, useState } from "react";
+
+// All‑in‑one runnable page: Telehealth + Tele‑Pharmacy demos in one React component (EN/DE/AR)
+// Single‑file, no backend required. All actions are simulated on the client for demo purposes.
+// How to use: paste into Next.js App Router as app/page.tsx (Tailwind enabled) or any React SPA.
+// Replace placeholders: YOUR_VOICE_AGENT_WIDGET_URL, YOUR_AVATAR_PROVIDER_IFRAME, Cal.com links.
+
+// ========== i18n ==========
+const I18N = {
+  en: {
+    brand: "NextViseAI — Healthcare Demos",
+    tabs: { th: "Telehealth", tp: "Tele‑Pharmacy" },
+    lang: "Language",
+    consent: "I consent to receive demo messages (SMS/WhatsApp/Email). This is a demo and not medical advice.",
+    name: "Name",
+    phone: "Mobile number",
+    email: "Email",
+    or: "or",
+    // Telehealth
+    thTitle: "Try our Telehealth Agent",
+    thSub: "Talk to an AI assistant that books appointments, sends SMS/WhatsApp follow‑ups, and can hand off to a live doctor.",
+    startAgent: "Start Voice Agent",
+    scheduleNow: "Schedule now",
+    avatarDemo: "Avatar Tele‑Consultation (Demo)",
+    transcript: "Transcript",
+    summary: "Visit Summary",
+    doctorHandoff: "Book Doctor (e‑Prescription)",
+    genErx: "Generate e‑Rx (Demo)",
+    sickNote: "Request Sick Note (Demo)",
+    // Tele‑Pharmacy
+    tpTitle: "Ask the Pharmacist Avatar",
+    tpSub: "Get product guidance, usage instructions, and precautions. The avatar can book a follow‑up and send you a summary.",
+    chooseProduct: "Choose a product (demo)",
+    add: "Add",
+    cart: "Cart",
+    qty: "Qty",
+    sendSummary: "Send summary",
+    channel: "Channel",
+    sms: "SMS",
+    whatsapp: "WhatsApp",
+    emailCh: "Email",
+    // Sick Note modal
+    snTitle: "Sick Note (Demo)",
+    reason: "Reason / Symptoms",
+    startDate: "Start date",
+    duration: "Duration (days)",
+    country: "Country",
+    employerEmail: "Employer email (optional)",
+    create: "Create",
+    cancel: "Cancel",
+    footer: "Demo only • HIPAA/GDPR aware flow • Do not enter real PHI.",
+  },
+  de: {
+    brand: "NextViseAI — Healthcare‑Demos",
+    tabs: { th: "Telehealth", tp: "Tele‑Pharmacy" },
+    lang: "Sprache",
+    consent: "Ich stimme zu, Demo‑Nachrichten (SMS/WhatsApp/E‑Mail) zu erhalten. Dies ist nur eine Demo und keine medizinische Beratung.",
+    name: "Name",
+    phone: "Handynummer",
+    email: "E‑Mail",
+    or: "oder",
+    thTitle: "Testen Sie unseren Telehealth‑Agenten",
+    thSub: "Sprechen Sie mit einem KI‑Assistenten, der Termine bucht, Follow‑ups sendet und an einen Live‑Arzt übergibt.",
+    startAgent: "Voice‑Agent starten",
+    scheduleNow: "Jetzt Termin buchen",
+    avatarDemo: "Avatar‑Telekonsultation (Demo)",
+    transcript: "Transkript",
+    summary: "Besuchs‑Zusammenfassung",
+    doctorHandoff: "Arzt buchen (E‑Rezept)",
+    genErx: "E‑Rezept erzeugen (Demo)",
+    sickNote: "Krankschreibung anfordern (Demo)",
+    tpTitle: "Fragen Sie den Apotheker‑Avatar",
+    tpSub: "Produkthinweise, Anwendung und Vorsicht. Avatar kann Follow‑ups buchen und Zusammenfassung senden.",
+    chooseProduct: "Produkt wählen (Demo)",
+    add: "Hinzufügen",
+    cart: "Warenkorb",
+    qty: "Menge",
+    sendSummary: "Zusammenfassung senden",
+    channel: "Kanal",
+    sms: "SMS",
+    whatsapp: "WhatsApp",
+    emailCh: "E‑Mail",
+    snTitle: "Krankschreibung (Demo)",
+    reason: "Grund / Symptome",
+    startDate: "Beginn",
+    duration: "Dauer (Tage)",
+    country: "Land",
+    employerEmail: "Arbeitgeber‑E‑Mail (optional)",
+    create: "Erstellen",
+    cancel: "Abbrechen",
+    footer: "Nur Demo • HIPAA/GDPR‑bewusster Ablauf • Keine echten Gesundheitsdaten eingeben.",
+  },
+  ar: {
+    brand: "NextViseAI — عروض تجريبية صحية",
+    tabs: { th: "الصحة عن بُعد", tp: "الصيدلة عن بُعد" },
+    lang: "اللغة",
+    consent: "أوافق على استلام رسائل تجريبية (SMS/واتساب/البريد). هذا عرض تجريبي وليس نصيحة طبية.",
+    name: "الاسم",
+    phone: "رقم الجوال",
+    email: "البريد الإلكتروني",
+    or: "أو",
+    thTitle: "جرّب وكيل الصحة عن بُعد",
+    thSub: "تحدث مع وكيل يحجز المواعيد ويرسل المتابعات ويمكنه التحويل لطبيب مباشر.",
+    startAgent: "بدء الوكيل الصوتي",
+    scheduleNow: "احجز الآن",
+    avatarDemo: "استشارة أفاتار (تجريبي)",
+    transcript: "النص الحرفي",
+    summary: "ملخص الزيارة",
+    doctorHandoff: "حجز طبيب (وصفة إلكترونية)",
+    genErx: "إنشاء وصفة إلكترونية (تجريبي)",
+    sickNote: "طلب إجازة مرضية (تجريبي)",
+    tpTitle: "اسأل أفاتار الصيدلي",
+    tpSub: "إرشادات المنتج والاستخدام والاحتياطات. يمكنه حجز المتابعة وإرسال ملخص.",
+    chooseProduct: "اختر منتجًا (تجريبي)",
+    add: "إضافة",
+    cart: "السلة",
+    qty: "الكمية",
+    sendSummary: "إرسال الملخص",
+    channel: "القناة",
+    sms: "SMS",
+    whatsapp: "واتساب",
+    emailCh: "البريد",
+    snTitle: "إجازة مرضية (تجريبي)",
+    reason: "السبب/الأعراض",
+    startDate: "تاريخ البدء",
+    duration: "المدة (أيام)",
+    country: "الدولة",
+    employerEmail: "بريد صاحب العمل (اختياري)",
+    create: "إنشاء",
+    cancel: "إلغاء",
+    footer: "عرض تجريبي فقط • مراعاة HIPAA/GDPR • تجنب إدخال بيانات صحية حقيقية.",
+  },
+} as const;
+
+type LangKey = keyof typeof I18N;
+
+// Demo catalog for Tele‑Pharmacy
+const DEMO_PRODUCTS = [
+  { id: "pain_relief", name: { en: "Pain Relief (ibuprofen 200mg)", de: "Schmerzmittel (Ibuprofen 200mg)", ar: "مسكن ألم (إيبوبروفين 200 ملغ)" } },
+  { id: "allergy", name: { en: "Allergy (cetirizine 10mg)", de: "Allergie (Cetirizin 10mg)", ar: "حساسية (سيتريزين 10 ملغ)" } },
+  { id: "cough", name: { en: "Cough Syrup (dextromethorphan)", de: "Hustensaft (Dextromethorphan)", ar: "شراب سعال (ديكستروميثورفان)" } },
+  { id: "vitamin_d", name: { en: "Vitamin D3 (1000 IU)", de: "Vitamin D3 (1000 IE)", ar: "فيتامين د3 (1000 وحدة)" } },
+];
+
+export default function TeleDemoApp() {
+  const [lang, setLang] = useState<LangKey>("en");
+  const t = I18N[lang];
+  const rtl = lang === "ar";
+
+  // Shared contact/consent
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
+
+  // Tabs
+  const [tab, setTab] = useState<"th" | "tp">("th");
+
+  // Tele‑Pharmacy cart
+  const [cart, setCart] = useState<{ id: string; qty: number }[]>([]);
+  const addToCart = (id: string) => {
+    setCart((prev) => {
+      const ex = prev.find((p) => p.id === id);
+      if (ex) return prev.map((p) => (p.id === id ? { ...p, qty: p.qty + 1 } : p));
+      return [...prev, { id, qty: 1 }];
+    });
+  };
+
+  // Channels (for summary sending demo)
+  const [channel, setChannel] = useState<"sms" | "whatsapp" | "email">("sms");
+
+  // Query params for embeds
+  const qp = new URLSearchParams({ name: name || "Demo User", phone, email, lang });
+  const voiceAgentUrl = `https://YOUR_VOICE_AGENT_WIDGET_URL.example.com?${qp.toString()}`;
+  const cal30 = `https://cal.com/nextviseai/30min?overlayCalendar=true&${qp.toString()}`; // Telehealth general
+  const calDoctorTH = `https://cal.com/YOUR_TEAM/telehealth-md-10min?overlayCalendar=true&${qp.toString()}`; // Doctor handoff (TH)
+  const calDoctorTP = `https://cal.com/YOUR_TEAM/telepharmacy-md-10min?overlayCalendar=true&${qp.toString()}`; // Doctor handoff (TP)
+
+  // Avatar provider embeds (replace)
+  const avatarTelehealth = `https://YOUR_AVATAR_PROVIDER_IFRAME.example.com?${qp.toString()}`;
+  const avatarTelepharmacy = `https://YOUR_AVATAR_PROVIDER_IFRAME.example.com?mode=pharmacy&${qp.toString()}`;
+
+  // ========= Demo actions (client‑side, no backend) =========
+  const sendSummaryDemo = (context: "th" | "tp") => {
+    if (!consent) return alert("Consent required for demo messaging.");
+    const payload = {
+      context,
+      to: { name, phone, email },
+      channel,
+      lang,
+      cart: context === "tp" ? cart : undefined,
+    };
+    console.log("SUMMARY DEMO", payload);
+    alert("Summary sent (demo) — check console log");
+  };
+
+  const genErxDemo = (context: "th" | "tp") => {
+    // Create a simple HTML Doc as a Blob to simulate a downloadable e‑Rx
+    const now = new Date().toISOString().slice(0,16).replace("T"," ");
+    const items = (context === "tp" && cart.length)
+      ? `<ul>${cart.map(c=>`<li>${c.id} × ${c.qty}</li>`).join("")}</ul>`
+      : `<em>No products specified (demo)</em>`;
+
+    const html = `<!doctype html><html><head><meta charset='utf-8'><title>e‑Rx Demo</title>
+      <style>body{font-family:system-ui,Segoe UI,Arial;margin:24px;}</style>
+      </head><body>
+      <h1>e‑Prescription (DEMO)</h1>
+      <p><strong>Patient:</strong> ${name || "Demo User"} (${email || "-"}, ${phone || "-"})</p>
+      <p><strong>Date:</strong> ${now}</p>
+      <h3>Items</h3>${items}
+      <p><strong>Note:</strong> This is a DEMO document, not valid for dispensing.</p>
+      </body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
+  const genSickNoteDemo = () => setSickOpen(true);
+
+  // Sick Note modal state
+  const [sickOpen, setSickOpen] = useState(false);
+  const [snReason, setSnReason] = useState("");
+  const [snStart, setSnStart] = useState("");
+  const [snDays, setSnDays] = useState(1);
+  const [snCountry, setSnCountry] = useState("DE");
+  const [snEmployer, setSnEmployer] = useState("");
+
+  const createSickNoteDemo = () => {
+    const now = new Date().toISOString().slice(0,10);
+    const html = `<!doctype html><html><head><meta charset='utf-8'><title>Sick Note Demo</title>
+    <style>body{font-family:system-ui,Segoe UI,Arial;margin:24px}</style></head><body>
+    <h1>Sick Note (DEMO)</h1>
+    <p><strong>Patient:</strong> ${name || "Demo User"} (${email || "-"})</p>
+    <p><strong>Country:</strong> ${snCountry}</p>
+    <p><strong>Start:</strong> ${snStart || now}</p>
+    <p><strong>Duration (days):</strong> ${snDays}</p>
+    <p><strong>Reason:</strong> ${snReason || "(not specified)"}</p>
+    <p><strong>Employer:</strong> ${snEmployer || "(none)"}</p>
+    <p><strong>Disclaimer:</strong> DEMO only — not a valid medical certificate.</p>
+    </body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setSickOpen(false);
+  };
+
+  // ========== UI ==========
+  return (
+    <div className={`${rtl ? "direction-rtl" : ""} min-h-screen bg-gray-50 text-gray-900`}>
+      <header className="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div className="font-semibold text-lg">{t.brand}</div>
+        <div className="flex items-center gap-2">
+          {(["en","de","ar"] as LangKey[]).map(l => (
+            <button key={l} onClick={()=>setLang(l)} className={`px-3 py-1 rounded-full border ${l===lang?"bg-black text-white":"bg-white"}`}>{l.toUpperCase()}</button>
+          ))}
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 pb-24">
+        {/* Contact & consent */}
+        <section className="bg-white p-4 rounded-2xl shadow mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input className="border rounded-xl px-3 py-2" placeholder={t.name} value={name} onChange={e=>setName(e.target.value)} />
+            <input className="border rounded-xl px-3 py-2" placeholder={t.phone} value={phone} onChange={e=>setPhone(e.target.value)} />
+            <input className="border rounded-xl px-3 py-2" placeholder={t.email} value={email} onChange={e=>setEmail(e.target.value)} />
+          </div>
+          <label className="flex items-start gap-2 mt-3 text-sm">
+            <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} />
+            <span>{t.consent}</span>
+          </label>
+        </section>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button onClick={()=>setTab("th")} className={`px-4 py-2 rounded-xl border ${tab==="th"?"bg-black text-white":"bg-white"}`}>{t.tabs.th}</button>
+          <button onClick={()=>setTab("tp")} className={`px-4 py-2 rounded-xl border ${tab==="tp"?"bg-black text-white":"bg-white"}`}>{t.tabs.tp}</button>
+        </div>
+
+        {/* Telehealth */}
+        {tab==="th" && (
+          <section className="grid md:grid-cols-2 gap-8 items-start">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-3">{t.thTitle}</h1>
+              <p className="text-base md:text-lg mb-4">{t.thSub}</p>
+
+              <div className="flex items-center gap-3 mb-6">
+                <a href={voiceAgentUrl} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 rounded-xl bg-black text-white">{t.startAgent}</a>
+                <span className="opacity-60">{t.or}</span>
+                <a href={cal30} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-xl border bg-white">{t.scheduleNow}</a>
+                <button onClick={()=>window.open(calDoctorTH, "_blank")} className="px-4 py-2 rounded-xl border bg-white">{t.doctorHandoff}</button>
+                <button onClick={()=>genErxDemo("th")} className="px-4 py-2 rounded-xl border bg-white">{t.genErx}</button>
+                <button onClick={genSickNoteDemo} className="px-4 py-2 rounded-xl border bg-white">{t.sickNote}</button>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl shadow mb-4">
+                <h3 className="font-semibold mb-2">{t.summary}</h3>
+                <div className="border rounded-xl p-3 text-sm">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Reason: Follow‑up for lab results (demo)</li>
+                    <li>Preferred slot: Tomorrow 10:00</li>
+                    <li>Next steps: Confirmation & reminders via SMS/WhatsApp</li>
+                  </ul>
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <button onClick={()=>sendSummaryDemo("th")} className="px-4 py-2 rounded-xl border bg-white">{t.sendSummary}</button>
+                  <select className="border rounded-xl px-2 py-2" value={channel} onChange={e=>setChannel(e.target.value as any)}>
+                    <option value="sms">{t.sms}</option>
+                    <option value="whatsapp">{t.whatsapp}</option>
+                    <option value="email">{t.emailCh}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-3 rounded-2xl shadow">
+              <div className="aspect-video w-full overflow-hidden rounded-xl border">
+                <iframe src={avatarTelehealth} className="w-full h-full" title="Telehealth Avatar" allow="microphone; autoplay; clipboard-write" />
+              </div>
+              <p className="text-xs opacity-70 mt-2">{t.avatarDemo}</p>
+            </div>
+          </section>
+        )}
+
+        {/* Tele‑Pharmacy */}
+        {tab==="tp" && (
+          <section className="grid md:grid-cols-2 gap-8 items-start">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-3">{t.tpTitle}</h1>
+              <p className="text-base md:text-lg mb-4">{t.tpSub}</p>
+
+              <div className="bg-white p-4 rounded-2xl shadow mb-4">
+                <h3 className="font-semibold mb-2">{t.chooseProduct}</h3>
+                <ul className="space-y-2">
+                  {DEMO_PRODUCTS.map(p=> (
+                    <li key={p.id} className="flex items-center justify-between border rounded-xl p-2">
+                      <span>{(p.name as any)[lang]}</span>
+                      <button onClick={()=>addToCart(p.id)} className="px-3 py-1 rounded-lg border bg-white">{t.add}</button>
+                    </li>
+                  ))}
+                </ul>
+                {cart.length>0 && (
+                  <div className="mt-3 text-sm">
+                    <div className="font-medium mb-1">{t.cart}:</div>
+                    <ul className="list-disc pl-5">
+                      {cart.map(c=>{
+                        const prod = DEMO_PRODUCTS.find(p=>p.id===c.id)!;
+                        return <li key={c.id}>{(prod.name as any)[lang]} — {t.qty}: {c.qty}</li>
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 mb-6">
+                <a href={voiceAgentUrl} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 rounded-xl bg-black text-white">{t.startAgent}</a>
+                <span className="opacity-60">{t.or}</span>
+                <button onClick={()=>window.open(calDoctorTP, "_blank")} className="px-4 py-2 rounded-xl border bg-white">{t.doctorHandoff}</button>
+                <button onClick={()=>genErxDemo("tp")} className="px-4 py-2 rounded-2xl border bg-white">{t.genErx}</button>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl shadow">
+                <h3 className="font-semibold mb-2">{t.summary}</h3>
+                <div className="border rounded-xl p-3 text-sm">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Products: {cart.length ? cart.map(c=>`${c.id}x${c.qty}`).join(", ") : "(none)"}</li>
+                    <li>Advice: Demo label guidance; check contraindications and interactions.</li>
+                    <li>Next steps: Follow instructions; seek help if symptoms persist.</li>
+                  </ul>
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <button onClick={()=>sendSummaryDemo("tp")} className="px-4 py-2 rounded-xl border bg-white">{t.sendSummary}</button>
+                  <select className="border rounded-xl px-2 py-2" value={channel} onChange={e=>setChannel(e.target.value as any)}>
+                    <option value="sms">{t.sms}</option>
+                    <option value="whatsapp">{t.whatsapp}</option>
+                    <option value="email">{t.emailCh}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-3 rounded-2xl shadow">
+              <div className="aspect-video w-full overflow-hidden rounded-xl border">
+                <iframe src={avatarTelepharmacy} className="w-full h-full" title="Tele‑Pharmacy Avatar" allow="microphone; autoplay; clipboard-write" />
+              </div>
+              <p className="text-xs opacity-70 mt-2">{t.avatarDemo}</p>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="border-t bg-white">
+        <div className="max-w-6xl mx-auto px-4 py-6 text-xs opacity-70">{t.footer}</div>
+      </footer>
+
+      {/* Sick Note Modal (simple) */}
+      {sickOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white w-full max-w-xl rounded-2xl p-4 shadow">
+            <h3 className="text-lg font-semibold mb-3">{t.snTitle}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input className="border rounded-xl px-3 py-2" placeholder={t.reason} value={snReason} onChange={e=>setSnReason(e.target.value)} />
+              <input type="date" className="border rounded-xl px-3 py-2" placeholder={t.startDate} value={snStart} onChange={e=>setSnStart(e.target.value)} />
+              <input type="number" min={1} className="border rounded-xl px-3 py-2" placeholder={t.duration} value={snDays} onChange={e=>setSnDays(parseInt(e.target.value||"1",10))} />
+              <select className="border rounded-xl px-3 py-2" value={snCountry} onChange={e=>setSnCountry(e.target.value)}>
+                <option value="DE">DE</option>
+                <option value="USA">USA</option>
+                <option value="GCC">GCC</option>
+              </select>
+              <input className="border rounded-xl px-3 py-2 md:col-span-2" placeholder={t.employerEmail} value={snEmployer} onChange={e=>setSnEmployer(e.target.value)} />
+            </div>
+            <div className="mt-4 flex gap-3 justify-end">
+              <button onClick={()=>setSickOpen(false)} className="px-4 py-2 rounded-xl border bg-white">{t.cancel}</button>
+              <button onClick={createSickNoteDemo} className="px-4 py-2 rounded-xl bg-black text-white">{t.create}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
