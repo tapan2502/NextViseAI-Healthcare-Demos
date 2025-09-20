@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useI18n } from "@/hooks/useI18n";
 import ContactForm from "@/components/ContactForm";
 import ServiceTabs from "@/components/ServiceTabs";
@@ -33,24 +34,38 @@ export default function Home() {
             </h1>
           </div>
           
-          {/* Language Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t.lang}:</span>
-            <div className="flex gap-1">
-              {(["en", "de", "ar"] as const).map((langCode) => (
-                <button
-                  key={langCode}
-                  onClick={() => setLang(langCode)}
-                  className={`px-3 py-1.5 rounded-md border-2 font-medium text-sm transition-colors ${
-                    lang === langCode
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:bg-muted"
-                  }`}
-                  data-testid={`language-${langCode}`}
-                >
-                  {langCode.toUpperCase()}
-                </button>
-              ))}
+          {/* Navigation & Language Selector */}
+          <div className="flex items-center gap-4">
+            {/* Health Assessment Link */}
+            <Link href="/health-assessment">
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                data-testid="nav-health-assessment"
+              >
+                <i className="fas fa-brain"></i>
+                AI Health Assessment
+              </button>
+            </Link>
+            
+            {/* Language Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{t.lang}:</span>
+              <div className="flex gap-1">
+                {(["en", "de", "ar"] as const).map((langCode) => (
+                  <button
+                    key={langCode}
+                    onClick={() => setLang(langCode)}
+                    className={`px-3 py-1.5 rounded-md border-2 font-medium text-sm transition-colors ${
+                      lang === langCode
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background hover:bg-muted"
+                    }`}
+                    data-testid={`language-${langCode}`}
+                  >
+                    {langCode.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

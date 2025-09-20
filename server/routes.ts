@@ -7,6 +7,8 @@ import { voiceAgentService } from "./services/voiceAgentService";
 import { storage } from "./storage";
 import multer from 'multer';
 import { requireAuth, validatePatientAccess, AuthenticatedRequest } from './middleware/auth';
+import { healthAssessmentService } from './services/healthAssessmentService';
+import { z } from 'zod';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -340,6 +342,173 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending telepharmacy summary:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Health Assessment endpoints (secured)
+  app.get("/api/health/questionnaires", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const questionnaires = healthAssessmentService.getHealthQuestionnaires();
+      res.json({
+        success: true,
+        questionnaires,
+        message: "Health questionnaires retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Error fetching health questionnaires:", error);
+      res.status(500).json({ error: "Failed to fetch questionnaires" });
+    }
+  });
+
+  // Health assessment request validation schema
+  const healthAssessmentSchema = z.object({
+    patientId: z.string().min(1),
+    assessmentType: z.string().optional().default('symptom_check'),
+    symptoms: z.array(z.string()).min(1, "At least one symptom is required"),
+    responses: z.record(z.any()).optional().default({}),
+    severity: z.record(z.number().min(1).max(10)).optional().default({}),
+    duration: z.record(z.string()).optional().default({}),
+    additionalInfo: z.string().optional().default('')
+  });
+
+  app.post("/api/health/assessment", requireAuth, validatePatientAccess, async (req: AuthenticatedRequest, res) => {
+    try {
+      const validatedData = healthAssessmentSchema.parse(req.body);
+      const {
+        patientId,
+        assessmentType,
+        symptoms,
+        responses,
+        severity,
+        duration,
+        additionalInfo
+      } = validatedData;
+
+      // Get patient data for context
+      const patient = await storage.getPatient(patientId);
+      const patientConfig = patient ? {
+        patientAge: patient.dateOfBirth ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear() : undefined,
+        patientGender: patient.gender || undefined,
+        medicalHistory: [], // Would extract from medical records
+        currentMedications: [], // Would extract from prescriptions
+        allergies: [] // Would extract from patient data
+      } : undefined;
+
+      // Analyze symptoms with AI
+      const aiAnalysis = await healthAssessmentService.analyzeSymptoms({
+        symptoms,
+        severity,
+        duration,
+        additionalInfo,
+        patientConfig
+      });
+
+      // Create health assessment record
+      const assessment = await storage.createHealthAssessment({
+        patientId,
+        assessmentType,
+        symptoms,
+        responses,
+        aiAnalysis,
+        followUpRequired: aiAnalysis.followUpDays ? aiAnalysis.followUpDays <= 3 : false,
+        consultationRecommended: aiAnalysis.referralNeeded,
+        status: 'completed'
+      });
+
+      res.json({
+        success: true,
+        assessment: {
+          id: assessment.id,
+          assessmentType: assessment.assessmentType,
+          symptoms: assessment.symptoms,
+          aiAnalysis: assessment.aiAnalysis,
+          followUpRequired: assessment.followUpRequired,
+          consultationRecommended: assessment.consultationRecommended,
+          createdAt: assessment.createdAt
+        },
+        message: "Health assessment completed successfully"
+      });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Validation error",
+          details: error.errors,
+          message: "Please check your input and try again"
+        });
+      }
+      console.error("Error creating health assessment:", error);
+      res.status(500).json({ error: "Failed to complete health assessment" });
+    }
+  });
+
+  app.get("/api/health/assessments/:patientId", requireAuth, validatePatientAccess, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { patientId } = req.params;
+      const { limit = 10, offset = 0 } = req.query;
+
+      const assessments = await storage.getHealthAssessmentsByPatient(
+        patientId,
+        Number(limit),
+        Number(offset)
+      );
+
+      res.json({
+        success: true,
+        assessments,
+        count: assessments.length,
+        message: "Health assessments retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Error fetching health assessments:", error);
+      res.status(500).json({ error: "Failed to fetch health assessments" });
+    }
+  });
+
+  app.get("/api/health/assessment/:id", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+      const assessment = await storage.getHealthAssessment(id);
+
+      if (!assessment) {
+        return res.status(404).json({ 
+          error: "Assessment not found",
+          message: "The requested health assessment does not exist"
+        });
+      }
+
+      // Verify the assessment belongs to a patient accessible by this user
+      const patient = await storage.getPatient(assessment.patientId);
+      if (!patient || (req.user?.id !== 'demo-user-id' && patient.userId !== req.user?.id)) {
+        return res.status(403).json({ 
+          error: "Access denied",
+          message: "You do not have permission to access this assessment"
+        });
+      }
+
+      res.json({
+        success: true,
+        assessment,
+        message: "Health assessment retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Error fetching health assessment:", error);
+      res.status(500).json({ error: "Failed to fetch health assessment" });
+    }
+  });
+
+  app.get("/api/health/emergency-symptoms", requireAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+      const emergencySymptoms = healthAssessmentService.getEmergencySymptoms();
+      res.json({
+        success: true,
+        emergencySymptoms,
+        warning: "If you experience any of these symptoms, seek immediate medical attention",
+        message: "Emergency symptoms list retrieved successfully"
+      });
+    } catch (error) {
+      console.error("Error fetching emergency symptoms:", error);
+      res.status(500).json({ error: "Failed to fetch emergency symptoms" });
     }
   });
 
