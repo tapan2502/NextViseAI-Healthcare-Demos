@@ -14,12 +14,14 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc } from "drizzle-orm";
+import { securityService } from "./services/securityService";
 
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  verifyUserPassword(username: string, password: string): Promise<User | null>;
 
   // Patient operations
   getPatient(id: string): Promise<Patient | undefined>;
@@ -91,55 +93,117 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(user).returning();
+    // Hash the password before storing
+    const hashedPassword = await securityService.hashPassword(user.password);
+    const userWithHashedPassword = { ...user, password: hashedPassword };
+    
+    const result = await db.insert(users).values(userWithHashedPassword).returning();
     return result[0];
+  }
+
+  async verifyUserPassword(username: string, password: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) return null;
+    
+    const isValidPassword = await securityService.verifyPassword(password, user.password);
+    return isValidPassword ? user : null;
   }
 
   // Patient operations
   async getPatient(id: string): Promise<Patient | undefined> {
     const result = await db.select().from(patients).where(eq(patients.id, id)).limit(1);
-    return result[0];
+    return result[0] ? this.decryptPatientData(result[0]) : undefined;
   }
 
   async getPatientByEmail(email: string): Promise<Patient | undefined> {
     const result = await db.select().from(patients).where(eq(patients.email, email)).limit(1);
-    return result[0];
+    return result[0] ? this.decryptPatientData(result[0]) : undefined;
   }
 
   async createPatient(patient: InsertPatient): Promise<Patient> {
-    const result = await db.insert(patients).values(patient).returning();
-    return result[0];
+    // Encrypt sensitive patient data
+    const encryptedPatient = {
+      ...patient,
+      medicalHistory: securityService.encryptSensitiveField(patient.medicalHistory),
+      insuranceInfo: securityService.encryptSensitiveField(patient.insuranceInfo),
+      emergencyContact: securityService.encryptSensitiveField(patient.emergencyContact),
+    };
+    
+    const result = await db.insert(patients).values(encryptedPatient as any).returning();
+    return this.decryptPatientData(result[0]);
   }
 
   async updatePatient(id: string, patient: Partial<InsertPatient>): Promise<Patient | undefined> {
-    const result = await db.update(patients).set(patient).where(eq(patients.id, id)).returning();
-    return result[0];
+    // Encrypt sensitive fields if they're being updated
+    const encryptedUpdate = { ...patient };
+    if (patient.medicalHistory !== undefined) {
+      encryptedUpdate.medicalHistory = securityService.encryptSensitiveField(patient.medicalHistory);
+    }
+    if (patient.insuranceInfo !== undefined) {
+      encryptedUpdate.insuranceInfo = securityService.encryptSensitiveField(patient.insuranceInfo);
+    }
+    if (patient.emergencyContact !== undefined) {
+      encryptedUpdate.emergencyContact = securityService.encryptSensitiveField(patient.emergencyContact);
+    }
+    
+    const result = await db.update(patients).set(encryptedUpdate as any).where(eq(patients.id, id)).returning();
+    return result[0] ? this.decryptPatientData(result[0]) : undefined;
+  }
+
+  private decryptPatientData(patient: Patient): Patient {
+    return {
+      ...patient,
+      medicalHistory: securityService.decryptSensitiveField(patient.medicalHistory),
+      insuranceInfo: securityService.decryptSensitiveField(patient.insuranceInfo),
+      emergencyContact: securityService.decryptSensitiveField(patient.emergencyContact),
+    };
   }
 
   async getPatientsByUserId(userId: string): Promise<Patient[]> {
-    return await db.select().from(patients).where(eq(patients.userId, userId));
+    const results = await db.select().from(patients).where(eq(patients.userId, userId));
+    return results.map(patient => this.decryptPatientData(patient));
   }
 
   // Medical records operations
   async getMedicalRecord(id: string): Promise<MedicalRecord | undefined> {
     const result = await db.select().from(medicalRecords).where(eq(medicalRecords.id, id)).limit(1);
-    return result[0];
+    return result[0] ? this.decryptMedicalRecord(result[0]) : undefined;
   }
 
   async getMedicalRecordsByPatient(patientId: string): Promise<MedicalRecord[]> {
-    return await db.select().from(medicalRecords)
+    const results = await db.select().from(medicalRecords)
       .where(eq(medicalRecords.patientId, patientId))
       .orderBy(desc(medicalRecords.createdAt));
+    return results.map(record => this.decryptMedicalRecord(record));
   }
 
   async createMedicalRecord(record: InsertMedicalRecord): Promise<MedicalRecord> {
-    const result = await db.insert(medicalRecords).values(record).returning();
-    return result[0];
+    // Encrypt sensitive medical content
+    const encryptedRecord = {
+      ...record,
+      content: securityService.encryptMedicalData(record.content),
+    };
+    
+    const result = await db.insert(medicalRecords).values(encryptedRecord).returning();
+    return this.decryptMedicalRecord(result[0]);
   }
 
   async updateMedicalRecord(id: string, record: Partial<InsertMedicalRecord>): Promise<MedicalRecord | undefined> {
-    const result = await db.update(medicalRecords).set(record).where(eq(medicalRecords.id, id)).returning();
-    return result[0];
+    // Encrypt content if it's being updated
+    const encryptedUpdate = { ...record };
+    if (record.content !== undefined) {
+      encryptedUpdate.content = securityService.encryptMedicalData(record.content);
+    }
+    
+    const result = await db.update(medicalRecords).set(encryptedUpdate).where(eq(medicalRecords.id, id)).returning();
+    return result[0] ? this.decryptMedicalRecord(result[0]) : undefined;
+  }
+
+  private decryptMedicalRecord(record: MedicalRecord): MedicalRecord {
+    return {
+      ...record,
+      content: securityService.decryptMedicalData(record.content),
+    };
   }
 
   // Consultation operations
