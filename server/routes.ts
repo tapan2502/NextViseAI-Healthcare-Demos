@@ -345,6 +345,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/telepharmacy/prescription", async (req, res) => {
+    try {
+      const { contactData, items = [], pharmacyContext } = req.body;
+      
+      if (!contactData.consent) {
+        return res.status(400).json({ error: "User consent required" });
+      }
+      
+      const prescription = await prescriptionService.generatePrescription({
+        patient: {
+          name: contactData.name || "Demo User",
+          email: contactData.email,
+          phone: contactData.phone
+        },
+        items,
+        context: pharmacyContext || "telepharmacy consultation"
+      });
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(prescription);
+    } catch (error) {
+      console.error("Error generating telepharmacy prescription:", error);
+      res.status(500).json({ error: "Failed to generate prescription" });
+    }
+  });
+
   // Health Assessment endpoints (secured)
   app.get("/api/health/questionnaires", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {

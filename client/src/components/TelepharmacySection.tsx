@@ -94,6 +94,46 @@ export default function TelepharmacySection({ contactData, t }: TelepharmacySect
     }
   });
 
+  const generatePrescriptionMutation = useMutation({
+    mutationFn: async () => {
+      // Convert cart items to prescription format with product details
+      const prescriptionItems = cart.map(cartItem => {
+        const product = products.find(p => p.id === cartItem.id);
+        return {
+          id: cartItem.id,
+          name: product?.name || cartItem.id,
+          quantity: cartItem.qty,
+          dosage: product?.dosage || "As directed",
+          activeIngredient: product?.activeIngredient || "",
+          instructions: "Take as prescribed by your pharmacist"
+        };
+      });
+
+      return apiRequest("POST", "/api/telepharmacy/prescription", {
+        contactData,
+        items: prescriptionItems,
+        pharmacyContext: "telepharmacy consultation"
+      });
+    },
+    onSuccess: async (response) => {
+      const htmlContent = await response.text();
+      const blob = new Blob([htmlContent], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      toast({
+        title: "e-Prescription Generated",
+        description: "Electronic prescription has been generated and opened in a new tab",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate e-prescription. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const voiceAgentUrl = import.meta.env.VITE_VOICE_AGENT_URL || "#";
 
   return (
@@ -274,6 +314,98 @@ export default function TelepharmacySection({ contactData, t }: TelepharmacySect
           </CardContent>
         </Card>
       </div>
+
+      {/* e-Prescription Generation */}
+      <Card data-testid="e-prescription-section">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i className="fas fa-file-medical text-blue-600"></i>
+            Generate e-Prescription (e-Rx)
+          </h3>
+          
+          {cart.length === 0 ? (
+            <div className="text-center py-8 bg-muted/30 rounded-lg">
+              <i className="fas fa-prescription-bottle text-4xl text-muted-foreground mb-4"></i>
+              <p className="text-muted-foreground mb-2">No medications in cart</p>
+              <p className="text-sm text-muted-foreground">Add prescription medications to your cart to generate an e-Rx</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                  <i className="fas fa-pills text-blue-600"></i>
+                  Prescription Items ({cart.length})
+                </h4>
+                <div className="space-y-2">
+                  {cart.map((item) => {
+                    const product = products.find(p => p.id === item.id);
+                    const getProductName = () => {
+                      if (!product) return item.id;
+                      switch(t.lang) {
+                        case 'de': return product.nameDE || product.name;
+                        case 'ar': return product.nameAR || product.name;
+                        default: return product.name;
+                      }
+                    };
+
+                    return (
+                      <div key={item.id} className="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-800 rounded border">
+                        <div className="flex-1">
+                          <span className="font-medium text-sm">{getProductName()}</span>
+                          {product?.activeIngredient && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({product.activeIngredient} {product.dosage})
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-blue-600 font-medium">
+                          Qty: {item.qty}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Patient: <span className="font-medium text-foreground">{contactData.name}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Contact: <span className="font-medium text-foreground">{contactData.email || contactData.phone}</span>
+                  </p>
+                </div>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => generatePrescriptionMutation.mutate()}
+                  disabled={!contactData.consent || generatePrescriptionMutation.isPending || cart.length === 0}
+                  data-testid="button-generate-prescription"
+                >
+                  {generatePrescriptionMutation.isPending ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-file-medical mr-2"></i>
+                      Generate e-Rx
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <span>This is a demonstration e-prescription system. Generated prescriptions are for demo purposes only and are not valid for dispensing medications.</span>
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Communication Channels */}
       <Card data-testid="communication-channels">
