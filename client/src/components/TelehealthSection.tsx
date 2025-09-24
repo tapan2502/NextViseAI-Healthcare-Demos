@@ -337,7 +337,7 @@ async function registerRetellCall(
 }
 
 /** ===== Component ===== */
-export default function TelehealthSectionIntegrated({
+export default function TelehealthSection({
   contactData,
   t,
   onOpenSickNote,
@@ -523,9 +523,7 @@ export default function TelehealthSectionIntegrated({
 
       await retellClient.startCall({
         accessToken: reg.access_token,
-        callId: reg.call_id,
         sampleRate: reg.sampleRate,
-        enableUpdate: true,
         // If SDK supports passing a stream, add: mediaStream: stream,
       });
 
