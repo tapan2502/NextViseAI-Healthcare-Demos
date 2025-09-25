@@ -1,7 +1,7 @@
 export const I18N = {
   en: {
     brand: "NextViseAI — Healthcare Demos",
-    tabs: { th: "Telehealth", tp: "Tele‑Pharmacy" },
+    tabs: { th: "Telehealth", tp: "Tele-Pharmacy" },
     lang: "Language",
     consent: "I consent to receive demo messages (SMS/WhatsApp/Email). This is a demo and not medical advice.",
     name: "Name",
@@ -10,18 +10,20 @@ export const I18N = {
     or: "or",
     // Telehealth
     thTitle: "Try our Telehealth Agent",
-    thSub: "Talk to an AI assistant that books appointments, sends SMS/WhatsApp follow‑ups, and can hand off to a live doctor.",
+    thSub:
+      "Talk to an AI assistant that books appointments, sends SMS/WhatsApp follow-ups, and can hand off to a live doctor.",
     startAgent: "Start Voice Agent",
     scheduleNow: "Schedule now",
-    avatarDemo: "Avatar Tele‑Consultation (Demo)",
+    avatarDemo: "Avatar Tele-Consultation (Demo)",
     transcript: "Transcript",
     summary: "Visit Summary",
-    doctorHandoff: "Book Doctor (e‑Prescription)",
-    genErx: "Generate e‑Rx (Demo)",
+    doctorHandoff: "Book Doctor (e-Prescription)",
+    genErx: "Generate e-Rx (Demo)",
     sickNote: "Request Sick Note (Demo)",
-    // Tele‑Pharmacy
+    // Tele-Pharmacy
     tpTitle: "Ask the Pharmacist Avatar",
-    tpSub: "Get product guidance, usage instructions, and precautions. The avatar can book a follow‑up and send you a summary.",
+    tpSub:
+      "Get product guidance, usage instructions, and precautions. The avatar can book a follow-up and send you a summary.",
     chooseProduct: "Choose a product (demo)",
     add: "Add",
     cart: "Cart",
@@ -31,6 +33,14 @@ export const I18N = {
     sms: "SMS",
     whatsapp: "WhatsApp",
     emailCh: "Email",
+    loading: "Loading",
+    loadingAgent: "Starting Agent",
+    loadingAvatar: "Loading Avatar",
+    outOfStock: "Out of Stock",
+    items: "items",
+    remove: "Remove",
+    productAdded: "Product added to your cart",
+    prescriptionItems: "Prescription Items",
     // Sick Note modal
     snTitle: "Sick Note (Demo)",
     reason: "Reason / Symptoms",
@@ -48,7 +58,8 @@ export const I18N = {
     phoneNumber: "+1 (555) 000-0000",
     emailAddress: "your@email.com",
     consentLabel: "Healthcare Demo Consent:",
-    consentText: "I consent to receive demo messages (SMS/WhatsApp/Email). This is a demonstration platform and not actual medical advice. All data is handled in compliance with HIPAA/GDPR standards.",
+    consentText:
+      "I consent to receive demo messages (SMS/WhatsApp/Email). This is a demonstration platform and not actual medical advice. All data is handled in compliance with HIPAA/GDPR standards.",
     visitSummaryDesc: "Real-time transcript and medical summary generation",
     generateSummary: "Generate Summary",
     ePrescriptionDesc: "Digital prescription generation and pharmacy integration",
@@ -67,29 +78,76 @@ export const I18N = {
     summaryType: "Summary Type",
     consultationSummary: "Consultation Summary",
     productInfo: "Product Information",
-    prescriptionDetails: "Prescription Details"
+    prescriptionDetails: "Prescription Details",
+
+    // NEW: per-product translations (EN)
+    products: {
+      acetaminophen_500: {
+        name: "Acetaminophen 500mg",
+        subtitle: "Acetaminophen 500mg",
+        description: "Gentle pain relief and fever reducer",
+      },
+      adhesive_bandages: {
+        name: "Adhesive Bandages (Mixed Sizes)",
+        subtitle: "N/A N/A",
+        description: "Sterile adhesive bandages for minor cuts and scrapes",
+      },
+      antacid_tablets: {
+        name: "Antacid Tablets",
+        subtitle: "Calcium Carbonate 500mg",
+        description: "Fast relief from heartburn and acid indigestion",
+      },
+      cetirizine_10: {
+        name: "Cetirizine 10mg",
+        subtitle: "Cetirizine HCl 10mg",
+        description: "24-hour allergy relief for hay fever and hives",
+      },
+      dextromethorphan_syrup: {
+        name: "Dextromethorphan Cough Syrup",
+        subtitle: "Dextromethorphan HBr 15mg/5ml",
+        description: "Effective cough suppressant for dry coughs",
+      },
+      ibuprofen_200: {
+        name: "Ibuprofen 200mg",
+        subtitle: "Ibuprofen 200mg",
+        description: "Fast-acting pain relief for headaches, muscle pain, and inflammation",
+      },
+      loratadine_10: {
+        name: "Loratadine 10mg",
+        subtitle: "Loratadine 10mg",
+        description: "Non-drowsy allergy relief for seasonal allergies",
+      },
+      vitamin_d3_1000: {
+        name: "Vitamin D3 1000 IU",
+        subtitle: "Cholecalciferol 1000 IU",
+        description: "Essential vitamin for bone health and immunity",
+      },
+    },
   },
+
   de: {
-    brand: "NextViseAI — Healthcare‑Demos",
-    tabs: { th: "Telehealth", tp: "Tele‑Pharmacy" },
+    brand: "NextViseAI — Healthcare-Demos",
+    tabs: { th: "Telehealth", tp: "Tele-Pharmacy" },
     lang: "Sprache",
-    consent: "Ich stimme zu, Demo‑Nachrichten (SMS/WhatsApp/E‑Mail) zu erhalten. Dies ist nur eine Demo und keine medizinische Beratung.",
+    consent:
+      "Ich stimme zu, Demo-Nachrichten (SMS/WhatsApp/E-Mail) zu erhalten. Dies ist nur eine Demo und keine medizinische Beratung.",
     name: "Name",
     phone: "Handynummer",
-    email: "E‑Mail",
+    email: "E-Mail",
     or: "oder",
-    thTitle: "Testen Sie unseren Telehealth‑Agenten",
-    thSub: "Sprechen Sie mit einem KI‑Assistenten, der Termine bucht, Follow‑ups sendet und an einen Live‑Arzt übergibt.",
-    startAgent: "Voice‑Agent starten",
+    thTitle: "Testen Sie unseren Telehealth-Agenten",
+    thSub:
+      "Sprechen Sie mit einem KI-Assistenten, der Termine bucht, Follow-ups sendet und an einen Live-Arzt übergibt.",
+    startAgent: "Voice-Agent starten",
     scheduleNow: "Jetzt Termin buchen",
-    avatarDemo: "Avatar‑Telekonsultation (Demo)",
+    avatarDemo: "Avatar-Telekonsultation (Demo)",
     transcript: "Transkript",
-    summary: "Besuchs‑Zusammenfassung",
-    doctorHandoff: "Arzt buchen (E‑Rezept)",
-    genErx: "E‑Rezept erzeugen (Demo)",
+    summary: "Besuchs-Zusammenfassung",
+    doctorHandoff: "Arzt buchen (E-Rezept)",
+    genErx: "E-Rezept erzeugen (Demo)",
     sickNote: "Krankschreibung anfordern (Demo)",
-    tpTitle: "Fragen Sie den Apotheker‑Avatar",
-    tpSub: "Produkthinweise, Anwendung und Vorsicht. Avatar kann Follow‑ups buchen und Zusammenfassung senden.",
+    tpTitle: "Fragen Sie den Apotheker-Avatar",
+    tpSub: "Produkthinweise, Anwendung und Vorsicht. Avatar kann Follow-ups buchen und Zusammenfassung senden.",
     chooseProduct: "Produkt wählen (Demo)",
     add: "Hinzufügen",
     cart: "Warenkorb",
@@ -98,23 +156,33 @@ export const I18N = {
     channel: "Kanal",
     sms: "SMS",
     whatsapp: "WhatsApp",
-    emailCh: "E‑Mail",
+    emailCh: "E-Mail",
+    loading: "Laden",
+    loadingAgent: "Agent wird gestartet",
+    loadingAvatar: "Avatar wird geladen",
+    outOfStock: "Nicht vorrätig",
+    items: "Artikel",
+    remove: "Entfernen",
+    productAdded: "Produkt zum Warenkorb hinzugefügt",
+    prescriptionItems: "Rezeptartikel",
+    // Sick Note modal
     snTitle: "Krankschreibung (Demo)",
     reason: "Grund / Symptome",
     startDate: "Beginn",
     duration: "Dauer (Tage)",
     country: "Land",
-    employerEmail: "Arbeitgeber‑E‑Mail (optional)",
+    employerEmail: "Arbeitgeber-E-Mail (optional)",
     create: "Erstellen",
     cancel: "Abbrechen",
-    footer: "Nur Demo • HIPAA/GDPR‑bewusster Ablauf • Keine echten Gesundheitsdaten eingeben.",
+    footer: "Nur Demo • HIPAA/GDPR-bewusster Ablauf • Keine echten Gesundheitsdaten eingeben.",
     contactInfo: "Kontaktinformationen",
     contactDesc: "Geben Sie Ihre Daten ein, um auf die Healthcare-Demos zuzugreifen",
     fullName: "Ihr vollständiger Name",
     phoneNumber: "+49 (0) 000 000000",
     emailAddress: "ihre@email.com",
     consentLabel: "Healthcare Demo Einverständnis:",
-    consentText: "Ich stimme zu, Demo-Nachrichten (SMS/WhatsApp/E-Mail) zu erhalten. Dies ist eine Demo-Plattform und keine echte medizinische Beratung. Alle Daten werden HIPAA/GDPR-konform behandelt.",
+    consentText:
+      "Ich stimme zu, Demo-Nachrichten (SMS/WhatsApp/E-Mail) zu erhalten. Dies ist eine Demo-Plattform und keine echte medizinische Beratung. Alle Daten werden HIPAA/GDPR-konform behandelt.",
     visitSummaryDesc: "Echtzeit-Transkript und medizinische Zusammenfassung",
     generateSummary: "Zusammenfassung erstellen",
     ePrescriptionDesc: "Digitale Rezepterstellung und Apothekenintegration",
@@ -133,8 +201,53 @@ export const I18N = {
     summaryType: "Zusammenfassungstyp",
     consultationSummary: "Beratungszusammenfassung",
     productInfo: "Produktinformationen",
-    prescriptionDetails: "Rezeptdetails"
+    prescriptionDetails: "Rezeptdetails",
+
+    // NEW: per-product translations (DE)
+    products: {
+      acetaminophen_500: {
+        name: "Acetaminophen 500mg",
+        subtitle: "Acetaminophen 500mg",
+        description: "Sanfte Schmerzlinderung und Fiebersenkung",
+      },
+      adhesive_bandages: {
+        name: "Pflaster (Gemischte Größen)",
+        subtitle: "k. A.",
+        description: "Sterile Pflaster für kleine Schnitte und Schürfwunden",
+      },
+      antacid_tablets: {
+        name: "Antazida Tabletten",
+        subtitle: "Calciumcarbonat 500mg",
+        description: "Schnelle Linderung bei Sodbrennen und saurer Verdauung",
+      },
+      cetirizine_10: {
+        name: "Cetirizin 10mg",
+        subtitle: "Cetirizinhydrochlorid 10mg",
+        description: "24-Stunden Allergielinderung bei Heuschnupfen und Nesselsucht",
+      },
+      dextromethorphan_syrup: {
+        name: "Dextromethorphan Hustensaft",
+        subtitle: "Dextromethorphan HBr 15mg/5ml",
+        description: "Wirksamer Hustenstiller bei Reizhusten",
+      },
+      ibuprofen_200: {
+        name: "Ibuprofen 200mg",
+        subtitle: "Ibuprofen 200mg",
+        description: "Schnelle Linderung bei Kopfschmerzen, Muskelschmerzen und Entzündungen",
+      },
+      loratadine_10: {
+        name: "Loratadin 10mg",
+        subtitle: "Loratadin 10mg",
+        description: "Nicht müde machende Allergielinderung bei Heuschnupfen",
+      },
+      vitamin_d3_1000: {
+        name: "Vitamin D3 1000 IE",
+        subtitle: "Cholecalciferol 1000 IE",
+        description: "Wichtiges Vitamin für Knochen und Immunsystem",
+      },
+    },
   },
+
   ar: {
     brand: "NextViseAI — عروض تجريبية صحية",
     tabs: { th: "الصحة عن بُعد", tp: "الصيدلة عن بُعد" },
@@ -165,6 +278,15 @@ export const I18N = {
     sms: "SMS",
     whatsapp: "واتساب",
     emailCh: "البريد",
+    loading: "جاري التحميل",
+    loadingAgent: "جاري بدء الوكيل",
+    loadingAvatar: "جاري تحميل الأفاتار",
+    outOfStock: "غير متوفر",
+    items: "عناصر",
+    remove: "إزالة",
+    productAdded: "تم إضافة المنتج إلى السلة",
+    prescriptionItems: "عناصر الوصفة",
+    // Sick Note modal
     snTitle: "إجازة مرضية (تجريبي)",
     reason: "السبب/الأعراض",
     startDate: "تاريخ البدء",
@@ -180,7 +302,8 @@ export const I18N = {
     phoneNumber: "+966 5X XXX XXXX",
     emailAddress: "بريدك@الإلكتروني.com",
     consentLabel: "موافقة العرض التجريبي الصحي:",
-    consentText: "أوافق على استلام رسائل تجريبية (SMS/واتساب/البريد الإلكتروني). هذه منصة عرض تجريبي وليست استشارة طبية فعلية. جميع البيانات تتم معالجتها وفقاً لمعايير HIPAA/GDPR.",
+    consentText:
+      "أوافق على استلام رسائل تجريبية (SMS/واتساب/البريد الإلكتروني). هذه منصة عرض تجريبي وليست استشارة طبية فعلية. جميع البيانات تتم معالجتها وفقاً لمعايير HIPAA/GDPR.",
     visitSummaryDesc: "نسخة فورية وملخص طبي في الوقت الفعلي",
     generateSummary: "إنشاء الملخص",
     ePrescriptionDesc: "إنشاء وصفة رقمية وتكامل مع الصيدلية",
@@ -199,15 +322,55 @@ export const I18N = {
     summaryType: "نوع الملخص",
     consultationSummary: "ملخص الاستشارة",
     productInfo: "معلومات المنتج",
-    prescriptionDetails: "تفاصيل الوصفة"
+    prescriptionDetails: "تفاصيل الوصفة",
+
+    // NEW: per-product translations (AR)
+    products: {
+      acetaminophen_500: {
+        name: "أسيتامينوفين 500 ملغ",
+        subtitle: "أسيتامينوفين 500 ملغ",
+        description: "مسكن خفيف للآلام وخافض للحرارة",
+      },
+      adhesive_bandages: {
+        name: "ضمادات لاصقة (مقاسات متنوعة)",
+        subtitle: "N/A",
+        description: "ضمادات معقمة للجروح والخدوش البسيطة",
+      },
+      antacid_tablets: {
+        name: "أقراص مضاد للحموضة",
+        subtitle: "كربونات الكالسيوم 500 ملغ",
+        description: "تخفيف سريع لحرقة المعدة والحموضة",
+      },
+      cetirizine_10: {
+        name: "سيتريزين 10 ملغ",
+        subtitle: "هيدروكلوريد سيتريزين 10 ملغ",
+        description: "تخفيف الحساسية لمدة 24 ساعة لحُمّى القش والشرى",
+      },
+      dextromethorphan_syrup: {
+        name: "شراب ديكستروميثورفان للسعال",
+        subtitle: "ديكستروميثورفان هبر 15 ملغ/5 مل",
+        description: "مثبط فعّال للسعال الجاف",
+      },
+      ibuprofen_200: {
+        name: "إيبوبروفين 200 ملغ",
+        subtitle: "إيبوبروفين 200 ملغ",
+        description: "تسكين سريع للصداع وآلام العضلات والالتهاب",
+      },
+      loratadine_10: {
+        name: "لوراتادين 10 ملغ",
+        subtitle: "لوراتادين 10 ملغ",
+        description: "تخفيف حساسية لا يسبب النعاس",
+      },
+      vitamin_d3_1000: {
+        name: "فيتامين د3 1000 وحدة",
+        subtitle: "كولي كالسيفيرول 1000 وحدة",
+        description: "فيتامين أساسي لصحة العظام والمناعة",
+      },
+    },
   },
-} as const;
+} as const
 
-export type LangKey = keyof typeof I18N;
+export type LangKey = keyof typeof I18N
 
-export const DEMO_PRODUCTS = [
-  { id: "pain_relief", name: { en: "Pain Relief (ibuprofen 200mg)", de: "Schmerzmittel (Ibuprofen 200mg)", ar: "مسكن ألم (إيبوبروفين 200 ملغ)" } },
-  { id: "allergy", name: { en: "Allergy (cetirizine 10mg)", de: "Allergie (Cetirizin 10mg)", ar: "حساسية (سيتريزين 10 ملغ)" } },
-  { id: "cough", name: { en: "Cough Syrup (dextromethorphan)", de: "Hustensaft (Dextromethorphan)", ar: "شراب سعال (ديكستروميثورفان)" } },
-  { id: "vitamin_d", name: { en: "Vitamin D3 (1000 IU)", de: "Vitamin D3 (1000 IE)", ar: "فيتامين د3 (1000 وحدة)" } },
-];
+// NOTE: the old `export const DEMO_PRODUCTS = [...]` is intentionally removed
+// to keep i18n.ts clean and translation-only.
