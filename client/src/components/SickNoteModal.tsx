@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { jsPDF } from "jspdf"; // ⬅️ NEW
 
 interface SickNoteModalProps {
   isOpen: boolean;
@@ -19,7 +20,6 @@ interface SickNoteModalProps {
   };
   t: any;
 }
-
 export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickNoteModalProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
@@ -30,6 +30,76 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
     employerEmail: ""
   });
 
+  // ⬇️ NEW: helper to format lines nicely
+  const buildSummaryLines = () => {
+    return [
+      "Sick Note Summary",
+      `Generated: ${new Date().toLocaleString()}`,
+      "",
+      "Patient",
+      `• Name: ${contactData?.name ?? "-"}`,
+      `• Phone: ${contactData?.phone ?? "-"}`,
+      `• Email: ${contactData?.email ?? "-"}`,
+      "",
+      "Details",
+      `• Reason: ${formData.reason || "-"}`,
+      `• Start Date: ${formData.startDate}`,
+      `• Duration (days): ${formData.duration}`,
+      `• Country: ${formData.country}`,
+      `• Employer Email: ${formData.employerEmail || "-"}`,
+      "",
+      "Consent",
+      `• Provided: ${contactData?.consent ? "Yes" : "No"}`
+    ];
+  };
+
+  // ⬇️ NEW: generate and download PDF on the fly
+  const handleDownloadSummaryPdf = () => {
+    try {
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const left = 56;            // ~0.78in margin
+      const top = 56;
+      const lineGap = 18;
+      let y = top;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Sick Note Summary", left, y);
+      y += 28;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+
+      const lines = buildSummaryLines();
+      // First line is title, already printed; skip it
+      const rest = lines.slice(1);
+
+      rest.forEach((line) => {
+        // wrap long lines nicely within page width
+        const maxWidth = doc.internal.pageSize.getWidth() - left * 2;
+        const wrapped = doc.splitTextToSize(line, maxWidth);
+        wrapped.forEach((wLine: string) => {
+          if (y > doc.internal.pageSize.getHeight() - top) {
+            doc.addPage();
+            y = top;
+          }
+          doc.text(wLine, left, y);
+          y += lineGap;
+        });
+      });
+
+      const safeName = (contactData?.name || "patient").replace(/[^\w\-]+/g, "_");
+      const fileName = `sick-note-summary_${formData.startDate}_${safeName}.pdf`;
+      doc.save(fileName);
+    } catch (e) {
+      toast({
+        title: "PDF Error",
+        description: "Could not generate the summary PDF.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const generateSickNoteMutation = useMutation({
     mutationFn: async () => {
       return apiRequest("POST", "/api/telehealth/sick-note", {
@@ -38,10 +108,25 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
       });
     },
     onSuccess: async (response) => {
+      // If your API can return a PDF, prefer this:
+      // const blob = await response.blob();
+      // if (blob.type === "application/pdf") {
+      //   const url = URL.createObjectURL(blob);
+      //   const a = document.createElement("a");
+      //   a.href = url;
+      //   a.download = `sick-note_${formData.startDate}.pdf`;
+      //   a.click();
+      //   URL.revokeObjectURL(url);
+      // } else {
+      //   // fallback to HTML open
+      // }
+
+      // Current HTML behavior (unchanged)
       const htmlContent = await response.text();
       const blob = new Blob([htmlContent], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
+
       toast({
         title: "Sick Note Generated",
         description: "Medical certificate has been generated and opened in a new tab",
@@ -83,8 +168,9 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
             {t.snTitle}
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Reason */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">{t.reason}</Label>
             <Textarea
@@ -96,7 +182,8 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               data-testid="textarea-reason"
             />
           </div>
-          
+
+          {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">{t.startDate}</Label>
@@ -119,7 +206,8 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               />
             </div>
           </div>
-          
+
+          {/* Country */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">{t.country}</Label>
             <select
@@ -134,7 +222,8 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               <option value="CA">Canada</option>
             </select>
           </div>
-          
+
+          {/* Employer Email */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">{t.employerEmail}</Label>
             <Input
@@ -145,7 +234,8 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               data-testid="input-employer-email"
             />
           </div>
-          
+
+          {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
@@ -155,6 +245,17 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
             >
               {generateSickNoteMutation.isPending ? "Creating..." : t.create}
             </Button>
+
+            {/* ⬇️ NEW: Download summary PDF */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadSummaryPdf}
+              data-testid="button-download-summary"
+            >
+              {t.downloadSummary ?? "Download Summary PDF"}
+            </Button>
+
             <Button
               type="button"
               variant="outline"

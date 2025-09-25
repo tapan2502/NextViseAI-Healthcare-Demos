@@ -1,278 +1,14 @@
-// import { useState, useEffect } from "react";
-// import { useMutation } from "@tanstack/react-query";
-// import { Card, CardContent } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-// import { useToast } from "@/hooks/use-toast";
-// import { apiRequest } from "@/lib/queryClient";
-
-// interface TelehealthSectionProps {
-//   contactData: {
-//     name: string;
-//     phone: string;
-//     email: string;
-//     consent: boolean;
-//   };
-//   t: any;
-//   onOpenSickNote: () => void;
-// }
-
-// export default function TelehealthSection({ contactData, t, onOpenSickNote }: TelehealthSectionProps) {
-//   const { toast } = useToast();
-//   const [summaryChannel, setSummaryChannel] = useState<"sms" | "whatsapp" | "email">("sms");
-
-//   const sendSummaryMutation = useMutation({
-//     mutationFn: async () => {
-//       return apiRequest("POST", "/api/telehealth/summary", {
-//         contactData,
-//         channel: summaryChannel,
-//         summaryType: "consultation"
-//       });
-//     },
-//     onSuccess: () => {
-//       toast({
-//         title: "Summary Sent",
-//         description: `Visit summary has been sent via ${summaryChannel.toUpperCase()}`,
-//       });
-//     },
-//     onError: () => {
-//       toast({
-//         title: "Error",
-//         description: "Failed to send summary. Please try again.",
-//         variant: "destructive",
-//       });
-//     }
-//   });
-
-//   const generatePrescriptionMutation = useMutation({
-//     mutationFn: async () => {
-//       return apiRequest("POST", "/api/telehealth/prescription", {
-//         contactData,
-//         items: []
-//       });
-//     },
-//     onSuccess: async (response) => {
-//       const htmlContent = await response.text();
-//       const blob = new Blob([htmlContent], { type: "text/html" });
-//       const url = URL.createObjectURL(blob);
-//       window.open(url, "_blank");
-//       toast({
-//         title: "Prescription Generated",
-//         description: "E-prescription has been generated and opened in a new tab",
-//       });
-//     }
-//   });
-
-//   const voiceAgentUrl = import.meta.env.VITE_VOICE_AGENT_URL || "#";
-//   const calendarUrl = import.meta.env.VITE_CALENDAR_URL || "#";
-//   const doctorHandoffUrl = import.meta.env.VITE_DOCTOR_HANDOFF_URL || "#";
-
-//   return (
-//     <section className="space-y-8" data-testid="telehealth-section">
-//       {/* Service Hero */}
-//       <div className="medical-card rounded-2xl p-8 text-white">
-//         <div className="max-w-2xl">
-//           <h2 className="text-3xl font-bold mb-4">{t.thTitle}</h2>
-//           <p className="text-lg text-white/90 mb-6">{t.thSub}</p>
-//           <div className="flex flex-wrap gap-4">
-//             <Button
-//               className="bg-white text-primary hover:bg-white/90"
-//               onClick={() => window.open(voiceAgentUrl, "_blank")}
-//               data-testid="button-start-agent"
-//             >
-//               <i className="fas fa-microphone mr-2"></i>
-//               {t.startAgent}
-//             </Button>
-//             <Button
-//               variant="outline"
-//               className="bg-white/20 backdrop-blur-sm text-white border-white/30 hover:bg-white/30"
-//               onClick={() => window.open(calendarUrl, "_blank")}
-//               data-testid="button-schedule"
-//             >
-//               <i className="fas fa-calendar mr-2"></i>
-//               {t.scheduleNow}
-//             </Button>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Voice Agent and Avatar Consultation */}
-//       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-//         <Card data-testid="voice-agent-card">
-//           <CardContent className="p-6">
-//             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-//               <i className="fas fa-microphone-alt text-primary"></i>
-//               Voice Agent Interface
-//             </h3>
-//             <div className="bg-muted/30 rounded-lg p-6 min-h-[200px] flex items-center justify-center">
-//               <div className="text-center">
-//                 <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 consultation-active">
-//                   <i className="fas fa-microphone text-primary-foreground text-xl"></i>
-//                 </div>
-//                 <p className="text-muted-foreground">Voice agent widget will embed here</p>
-//                 <p className="text-xs text-muted-foreground mt-2">
-//                   Integration with voice agent provider
-//                 </p>
-//               </div>
-//             </div>
-//           </CardContent>
-//         </Card>
-
-//         <Card data-testid="avatar-consultation-card">
-//           <CardContent className="p-6">
-//             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-//               <i className="fas fa-user-md text-secondary"></i>
-//               Avatar Tele-Consultation
-//             </h3>
-//             <div
-//               className="avatar-container rounded-lg p-0 min-h-[400px] border border-border overflow-hidden bg-background"
-//               data-testid="did-avatar-container"
-//             >
-//               {/* Direct iframe embed as alternative to script integration */}
-//               <iframe
-//                 src="https://agent.d-id.com/v2/index.html?client-key=YXV0aDB8NjhjZDMzZmIyZmJmN2RmMjY0ODkzOTA2OnFyVjFwWDlaWkktUk1JRUhDVVowNA==&agent-id=v2_agt_rlPFem2o"
-//                 className="w-full h-full border-0 rounded-lg"
-//                 allow="microphone; camera"
-//                 title="D-ID Avatar Agent"
-//                 onLoad={() => console.log('D-ID iframe loaded')}
-//                 onError={() => console.log('D-ID iframe failed to load')}
-//               />
-//             </div>
-//           </CardContent>
-//         </Card>
-//       </div>
-
-//       {/* Consultation Tools */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//         <Card data-testid="visit-summary-card">
-//           <CardContent className="p-6">
-//             <div className="flex items-center gap-3 mb-4">
-//               <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-//                 <i className="fas fa-file-medical text-accent"></i>
-//               </div>
-//               <h3 className="font-semibold text-foreground">Visit Summary</h3>
-//             </div>
-//             <div className="space-y-3">
-//               <div className="bg-muted/50 p-3 rounded-md text-sm">
-//                 <p className="text-muted-foreground">{t.visitSummaryDesc}</p>
-//               </div>
-//               <div className="flex items-center gap-2 mb-2">
-//                 <select
-//                   value={summaryChannel}
-//                   onChange={(e) => setSummaryChannel(e.target.value as any)}
-//                   className="flex-1 px-2 py-1 text-xs border border-input rounded-md bg-background"
-//                   data-testid="select-summary-channel"
-//                 >
-//                   <option value="sms">{t.sms}</option>
-//                   <option value="whatsapp">{t.whatsapp}</option>
-//                   <option value="email">{t.emailCh}</option>
-//                 </select>
-//               </div>
-//               <Button
-//                 className="w-full bg-accent hover:bg-accent/90"
-//                 size="sm"
-//                 onClick={() => sendSummaryMutation.mutate()}
-//                 disabled={!contactData.consent || sendSummaryMutation.isPending}
-//                 data-testid="button-send-summary"
-//               >
-//                 {sendSummaryMutation.isPending ? "Sending..." : t.sendSummary}
-//               </Button>
-//             </div>
-//           </CardContent>
-//         </Card>
-
-//         <Card data-testid="prescription-card">
-//           <CardContent className="p-6">
-//             <div className="flex items-center gap-3 mb-4">
-//               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-//                 <i className="fas fa-prescription-bottle text-primary"></i>
-//               </div>
-//               <h3 className="font-semibold text-foreground">E-Prescription</h3>
-//             </div>
-//             <div className="space-y-3">
-//               <div className="bg-muted/50 p-3 rounded-md text-sm">
-//                 <p className="text-muted-foreground">{t.ePrescriptionDesc}</p>
-//               </div>
-//               <Button
-//                 className="w-full bg-primary hover:bg-primary/90"
-//                 size="sm"
-//                 onClick={() => generatePrescriptionMutation.mutate()}
-//                 disabled={generatePrescriptionMutation.isPending}
-//                 data-testid="button-generate-prescription"
-//               >
-//                 {generatePrescriptionMutation.isPending ? "Generating..." : t.genErx}
-//               </Button>
-//             </div>
-//           </CardContent>
-//         </Card>
-
-//         <Card data-testid="sick-note-card">
-//           <CardContent className="p-6">
-//             <div className="flex items-center gap-3 mb-4">
-//               <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-//                 <i className="fas fa-file-medical-alt text-secondary"></i>
-//               </div>
-//               <h3 className="font-semibold text-foreground">Sick Note</h3>
-//             </div>
-//             <div className="space-y-3">
-//               <div className="bg-muted/50 p-3 rounded-md text-sm">
-//                 <p className="text-muted-foreground">{t.sickNoteDesc}</p>
-//               </div>
-//               <Button
-//                 className="w-full bg-secondary hover:bg-secondary/90"
-//                 size="sm"
-//                 onClick={onOpenSickNote}
-//                 data-testid="button-sick-note"
-//               >
-//                 {t.sickNote}
-//               </Button>
-//             </div>
-//           </CardContent>
-//         </Card>
-//       </div>
-
-//       {/* Doctor Handoff */}
-//       <Card data-testid="doctor-handoff-card">
-//         <CardContent className="p-6">
-//           <div className="flex items-center gap-3 mb-6">
-//             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-//               <i className="fas fa-user-doctor text-primary text-xl"></i>
-//             </div>
-//             <div>
-//               <h3 className="text-lg font-semibold text-foreground">{t.doctorHandoffTitle}</h3>
-//               <p className="text-muted-foreground">{t.doctorHandoffDesc}</p>
-//             </div>
-//           </div>
-//           <div className="flex flex-wrap gap-4">
-//             <Button
-//               className="bg-primary hover:bg-primary/90"
-//               onClick={() => window.open(doctorHandoffUrl, "_blank")}
-//               data-testid="button-book-doctor"
-//             >
-//               <i className="fas fa-calendar-check mr-2"></i>
-//               {t.bookDoctor}
-//             </Button>
-//             <Button
-//               variant="outline"
-//               onClick={() => window.open(doctorHandoffUrl, "_blank")}
-//               data-testid="button-emergency"
-//             >
-//               <i className="fas fa-phone mr-2"></i>
-//               {t.emergencyConsult}
-//             </Button>
-//           </div>
-//         </CardContent>
-//       </Card>
-//     </section>
-//   );
-// }
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+// import { apiRequest } from "@/lib/queryClient"; // ⬅️ Not needed now that we generate PDF client-side
 import { RetellWebClient } from "retell-client-js-sdk";
+
+/** === NEW: PDF libs (client-side) === */
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 /** ==== ENV (URLs) ===== */
 const VOICE_AGENT_URL = import.meta.env.VITE_VOICE_AGENT_URL || "#";
@@ -293,6 +29,73 @@ const RETELL_API_KEY =
 const RETELL_AGENT_ID =
   (import.meta as any).env?.VITE_RETELL_AGENT_ID ||
   "agent_289aab3b3b0f0c434fb2e5a4e5"; // dev fallback
+
+/** ===== Webhook (env) ===== */
+const WEBHOOK_URL =
+  (import.meta as any).env?.VITE_SUMMARY_WEBHOOK_URL ||
+  "https://hook.us2.make.com/qsoqu0ftv2du42qn02bm1q33gybaeiww"; // set in .env
+
+/** ===== D-ID (script embed) ===== */
+const DID_TARGET_ID = "did-container";
+const DID_SRC = "https://agent.d-id.com/v2/index.js";
+
+/** ========= D-ID helpers (Fix A) ========= */
+
+/** Wait until the D-ID SDK has mounted content into the target container */
+function waitForChildMount(containerId: string, timeout = 6000) {
+  return new Promise<void>((resolve, reject) => {
+    const container = document.getElementById(containerId);
+    if (!container) return reject(new Error("Missing DID container"));
+    if (container.children.length > 0) return resolve();
+
+    const observer = new MutationObserver(() => {
+      if (container.children.length > 0) {
+        observer.disconnect();
+        resolve();
+      }
+    });
+    observer.observe(container, { childList: true });
+
+    const t = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error("D-ID did not mount in time"));
+    }, timeout);
+  });
+}
+
+/** Load (or reload) the D-ID module with a cache-buster to force execution */
+function loadDidScript(): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const s = document.createElement("script");
+    s.type = "module";
+    s.src = `${DID_SRC}?cb=${Date.now()}`;
+    s.setAttribute("data-mode", "full");
+    s.setAttribute("data-client-key", DID_PUBLIC_KEY);
+    s.setAttribute("data-agent-id", DID_AGENT_ID);
+    s.setAttribute("data-name", "did-agent");
+    s.setAttribute("data-monitor", "true");
+    s.setAttribute("data-target-id", DID_TARGET_ID);
+
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Failed to load D-ID agent script"));
+    document.body.appendChild(s);
+  });
+}
+
+/** Remove any mounted player and all prior copies of the script */
+function unloadDid(): void {
+  // 1) Reset the container (removes mounted player/iframe/etc.)
+  const container = document.getElementById(DID_TARGET_ID);
+  if (container && container.parentNode) {
+    const fresh = container.cloneNode(false) as HTMLElement;
+    fresh.id = DID_TARGET_ID;
+    container.parentNode.replaceChild(fresh, container);
+  }
+  // 2) Remove all D-ID script tags
+  Array.from(document.scripts)
+    .filter((s) => s.src.includes("agent.d-id.com/v2/index.js"))
+    .forEach((s) => s.parentNode?.removeChild(s));
+}
 
 /** ===== Types ===== */
 interface TelehealthSectionProps {
@@ -336,6 +139,140 @@ async function registerRetellCall(
   return { access_token: data.access_token, call_id: data.call_id, sampleRate };
 }
 
+/** ===== Webhook payload builder ===== */
+function buildWebhookPayload(opts: {
+  contactData: TelehealthSectionProps["contactData"];
+  summaryChannel: "sms" | "whatsapp" | "email";
+  transcript: TranscriptMsg[];
+  callStatus: CallStatus;
+  t: any;
+}) {
+  const { contactData, summaryChannel, transcript, callStatus, t } = opts;
+
+  return {
+    source: "telehealth-ui",
+    timestamp: new Date().toISOString(),
+    lang: t?.lang ?? "en",
+    patient: {
+      name: contactData.name,
+      phone: contactData.phone,
+      email: contactData.email,
+      consent: contactData.consent,
+    },
+    summary: {
+      type: "consultation",
+      channel: summaryChannel,
+    },
+    agent: {
+      retell: {
+        agentId: RETELL_AGENT_ID,
+        callStatus,
+      },
+      did: {
+        agentId: DID_AGENT_ID,
+      },
+    },
+    transcript, // most recent transcript from Retell (if any)
+    links: {
+      voiceAgent: VOICE_AGENT_URL,
+      calendar: CALENDAR_URL,
+      doctorHandoff: DOCTOR_HANDOFF_URL,
+    },
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+  };
+}
+
+/** ===== NEW: Client-side PDF for e-Rx (dummy data) ===== */
+function generatePrescriptionPdf(opts: {
+  contactData: TelehealthSectionProps["contactData"];
+  t: any;
+}) {
+  const { contactData, t } = opts;
+
+  // Dummy items for now (can be wired to real selections later)
+  const items: Array<{
+    name: string;
+    strength: string;
+    qty: number;
+    directions: string;
+  }> = [
+    { name: "Amoxicillin", strength: "500 mg", qty: 14, directions: "Take 1 capsule twice daily after meals" },
+    { name: "Paracetamol", strength: "650 mg", qty: 10, directions: "Take 1 tablet every 8 hours as needed for fever" },
+  ];
+
+  const doc = new jsPDF();
+
+  // Header
+  doc.setFontSize(16);
+  doc.text("Telehealth — Demo e-Prescription (e-Rx)", 14, 16);
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text(
+    "This e-Rx is for demonstration purposes only and not valid for dispensing.",
+    14,
+    22
+  );
+
+  // Rx number + date
+  doc.setTextColor(0);
+  const rxNumber = `RX-${Date.now()}`;
+  doc.text(`Rx No.: ${rxNumber}`, 150, 16);
+  doc.text(`Date: ${new Date().toLocaleString()}`, 150, 22);
+
+  // Patient block
+  doc.setFontSize(12);
+  doc.text("Patient Details", 14, 34);
+  doc.setFontSize(10);
+  const patientLines = [
+    `Name: ${contactData?.name || "-"}`,
+    `Contact: ${contactData?.email || contactData?.phone || "-"}`,
+    `Consent: ${contactData?.consent ? "Yes" : "No"}`,
+  ];
+  patientLines.forEach((l, i) => doc.text(l, 14, 42 + i * 6));
+
+  // Items table
+  const rows = items.map((it) => [
+    it.name,
+    it.strength,
+    String(it.qty),
+    it.directions,
+  ]);
+
+  autoTable(doc, {
+    startY: 70,
+    head: [["Medication", "Strength", "Qty", "Directions"]],
+    body: rows.length ? rows : [["-", "-", "-", "-"]],
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [33, 111, 219] },
+    columnStyles: {
+      2: { halign: "right", cellWidth: 16 },
+      3: { cellWidth: 110 },
+    },
+  });
+
+  // Notes
+  let y = (doc as any).lastAutoTable?.finalY ?? 70;
+  y = Math.min(y + 10, 270);
+  doc.setFontSize(12);
+  doc.text("Notes", 14, y);
+  doc.setFontSize(10);
+  doc.setTextColor(80);
+  doc.text(
+    "Take as prescribed. If symptoms persist or worsen, seek medical advice.",
+    14,
+    y + 8
+  );
+
+  // Footer
+  doc.setTextColor(120);
+  doc.setFontSize(9);
+  doc.text("Telehealth Demo • Not for actual medical use", 14, 290);
+
+  // Open in new tab (or: doc.save('e-prescription.pdf'))
+  const url = doc.output("bloburl");
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 /** ===== Component ===== */
 export default function TelehealthSection({
   contactData,
@@ -356,62 +293,34 @@ export default function TelehealthSection({
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
-  // === Avatar state ===
-  const [avatarLoaded, setAvatarLoaded] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
+  // === Avatar (script embed) ===
+  const [avatarStatus, setAvatarStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
 
-  // === react-query mutations (as in your upper code) ===
-  const sendSummaryMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/telehealth/summary", {
-        contactData,
-        channel: summaryChannel,
-        summaryType: "consultation",
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Summary Sent",
-        description: `Visit summary has been sent via ${summaryChannel.toUpperCase()}`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to send summary. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // init D-ID (Fix A: cache-busted load + wait for mount)
+  useEffect(() => {
+    let cancelled = false;
+    const init = async () => {
+      setAvatarStatus("loading");
+      try {
+        await loadDidScript();
+        await waitForChildMount(DID_TARGET_ID, 6000);
+        if (!cancelled) setAvatarStatus("ready");
+      } catch (e) {
+        console.error("D-ID init error:", e);
+        if (!cancelled) setAvatarStatus("error");
+      }
+    };
+    init();
+    return () => {
+      cancelled = true;
+      unloadDid();
+      setAvatarStatus("idle");
+    };
+  }, []);
 
-  const generatePrescriptionMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/telehealth/prescription", {
-        contactData,
-        items: [],
-      });
-    },
-    onSuccess: async (response: Response) => {
-      const htmlContent = await response.text();
-      const blob = new Blob([htmlContent], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      toast({
-        title: "Prescription Generated",
-        description:
-          "E-prescription has been generated and opened in a new tab",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to generate prescription.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // === Retell event listeners & cleanup ===
+  // === Retell listeners & cleanup ===
   useEffect(() => {
     const onStarted = () => {
       setCallStatus("active");
@@ -453,7 +362,6 @@ export default function TelehealthSection({
     retellClient.on("error", onError);
     retellClient.on("update", onUpdate);
 
-    // Ensure call/mic stops on page unload
     const handleBeforeUnload = () => {
       try {
         (retellClient as any).stopCall?.();
@@ -482,7 +390,7 @@ export default function TelehealthSection({
     }
   }, [transcript]);
 
-  // === Start/End Retell call (wired to the Voice Agent card) ===
+  // === Start/End Retell call ===
   const toggleCall = async () => {
     if (callInProgress) return;
     setCallInProgress(true);
@@ -524,7 +432,8 @@ export default function TelehealthSection({
       await retellClient.startCall({
         accessToken: reg.access_token,
         sampleRate: reg.sampleRate,
-        // If SDK supports passing a stream, add: mediaStream: stream,
+        enableUpdate: true,
+        // mediaStream: stream, // if supported by SDK
       });
 
       setCallStatus("active");
@@ -540,13 +449,78 @@ export default function TelehealthSection({
     }
   };
 
-  // === Iframe src for D-ID avatar (uses env keys) ===
-  const avatarSrc = useMemo(() => {
-    const url = new URL("https://agent.d-id.com/v2/index.html");
-    url.searchParams.set("client-key", DID_PUBLIC_KEY);
-    url.searchParams.set("agent-id", DID_AGENT_ID);
-    return url.toString();
-  }, []);
+  /** ========= Send Summary: API + Webhook ========= */
+  const sendSummaryMutation = useMutation({
+    mutationFn: async () => {
+      // Your internal API call is commented out here (optional)
+      // await apiRequest("POST", "/api/telehealth/summary", { ... });
+
+      // Webhook (optional)
+      let webhookOk = true;
+      if (WEBHOOK_URL) {
+        const payload = buildWebhookPayload({
+          contactData,
+          summaryChannel,
+          transcript,
+          callStatus,
+          t,
+        });
+
+        try {
+          const res = await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          webhookOk = res.ok;
+        } catch (e) {
+          webhookOk = false;
+          console.error("Webhook POST failed:", e);
+        }
+      }
+
+      return { webhookOk };
+    },
+    onSuccess: ({ webhookOk }) => {
+      const extra = WEBHOOK_URL
+        ? webhookOk
+          ? " • Webhook ✓"
+          : " • Webhook ✕"
+        : "";
+      toast({
+        title: "Summary Sent",
+        description: `Visit summary sent via ${summaryChannel.toUpperCase()}${extra}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send summary. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // === e-Prescription generation (client-side PDF, no API) ===
+  const generatePrescriptionMutation = useMutation({
+    mutationFn: async () => {
+      generatePrescriptionPdf({ contactData, t });
+      return true;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Prescription Generated",
+        description: "A demo e-Rx PDF has been opened in a new tab.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate prescription.",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <section className="space-y-8" data-testid="telehealth-section">
@@ -557,17 +531,31 @@ export default function TelehealthSection({
           <p className="text-lg text-white/90 mb-6">{t.thSub}</p>
           <div className="flex flex-wrap gap-4">
             <Button
-              className="bg-white text-primary hover:bg-white/90"
-              onClick={() => window.open(VOICE_AGENT_URL, "_blank")}
-              data-testid="button-start-agent"
+              className={`${
+                callStatus === "active"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-primary hover:bg-primary/90"
+              }`}
+              onClick={toggleCall}
+              disabled={callInProgress}
             >
-              <i className="fas fa-microphone mr-2"></i>
-              {t.startAgent}
+              <i
+                className={`fas ${
+                  callStatus === "active" ? "fa-stop" : "fa-play"
+                } mr-2`}
+              />
+              {callStatus === "active"
+                ? t.endCall ?? "End Voice Agent"
+                : callInProgress
+                ? t.loadingAgent ?? "Starting…"
+                : t.startCall ?? "Start Voice Agent"}
             </Button>
             <Button
               variant="outline"
               className="bg-white/20 backdrop-blur-sm text-white border-white/30 hover:bg-white/30"
-              onClick={() => window.open(CALENDAR_URL, "_blank")}
+              onClick={() =>
+                window.open("https://cal.com/nextviseai/30min", "_blank")
+              }
               data-testid="button-schedule"
             >
               <i className="fas fa-calendar mr-2"></i>
@@ -607,13 +595,15 @@ export default function TelehealthSection({
                 disabled={callInProgress}
               >
                 <i
-                  className={`fas ${callStatus === "active" ? "fa-stop" : "fa-play"} mr-2`}
+                  className={`fas ${
+                    callStatus === "active" ? "fa-stop" : "fa-play"
+                  } mr-2`}
                 />
                 {callStatus === "active"
-                  ? (t.endCall ?? "End Voice Agent")
+                  ? t.endCall ?? "End Voice Agent"
                   : callInProgress
-                    ? (t.loadingAgent ?? "Starting…")
-                    : (t.startCall ?? "Start Voice Agent")}
+                  ? t.loadingAgent ?? "Starting…"
+                  : t.startCall ?? "Start Voice Agent"}
               </Button>
             </div>
 
@@ -657,44 +647,77 @@ export default function TelehealthSection({
           </CardContent>
         </Card>
 
-        {/* Avatar Card (D-ID) */}
+        {/* Avatar Card (D-ID script embed) */}
         <Card data-testid="avatar-consultation-card">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <i className="fas fa-user-md text-secondary"></i>
               Avatar Tele-Consultation
             </h3>
+
+            {/* D-ID mounts its player here */}
             <div
-              className="avatar-container rounded-lg p-0 min-h-[400px] border border-border overflow-hidden bg-background"
+              id={DID_TARGET_ID}
+              className="relative w-full aspect-[3/4] sm:aspect-[4/3] lg:aspect-video min-h-[320px] sm:min-h-[360px] rounded-xl border border-gray-200 bg-black/85 overflow-hidden grid place-items-center text-white/70 text-xs sm:text-sm"
               data-testid="did-avatar-container"
             >
-              <iframe
-                src={avatarSrc}
-                className="w-full h-full border-0 rounded-lg"
-                allow="microphone; camera"
-                title="D-ID Avatar Agent"
-                onLoad={() => {
-                  setAvatarLoaded(true);
-                  setAvatarError(null);
-                  console.log("D-ID iframe loaded");
-                }}
-                onError={() => {
-                  setAvatarLoaded(false);
-                  setAvatarError("Failed to load");
-                  console.log("D-ID iframe failed to load");
-                }}
-              />
+              {avatarStatus === "loading" && (
+                <div className="absolute inset-0 grid place-items-center">
+                  <div className="flex items-center gap-3 text-white/90">
+                    <span className="w-4 h-4 rounded-full animate-ping bg-white/80" />
+                    <span>{t?.loadingAvatar ?? "Loading avatar…"}</span>
+                  </div>
+                </div>
+              )}
+              {avatarStatus === "error" && (
+                <div className="absolute inset-0 grid place-items-center">
+                  <div className="text-center text-red-200">
+                    <p>Avatar failed to load.</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      Check keys / CSP / Allowed Origins.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {avatarStatus === "idle" && (
+                <span>
+                  {t?.demoVideoPlaceholder ?? "Click Start to load the avatar below."}
+                </span>
+              )}
             </div>
-            {!avatarLoaded && !avatarError && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {t.loadingAvatar ?? "Loading avatar…"}
-              </p>
-            )}
-            {avatarError && (
-              <p className="text-xs text-red-500 mt-2">
-                Avatar failed to load. Check keys / network / CSP.
-              </p>
-            )}
+
+            {/* Optional quick controls */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (avatarStatus === "loading") return;
+                  setAvatarStatus("loading");
+                  try {
+                    unloadDid();
+                    await loadDidScript();
+                    await waitForChildMount(DID_TARGET_ID, 6000);
+                    setAvatarStatus("ready");
+                  } catch (e) {
+                    console.error(e);
+                    setAvatarStatus("error");
+                  }
+                }}
+              >
+                <i className="fas fa-rotate-right mr-2" /> Reload
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  unloadDid();
+                  setAvatarStatus("idle");
+                }}
+              >
+                <i className="fas fa-stop mr-2" /> Stop
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -715,16 +738,7 @@ export default function TelehealthSection({
                 <p className="text-muted-foreground">{t.visitSummaryDesc}</p>
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <select
-                  value={summaryChannel}
-                  onChange={(e) => setSummaryChannel(e.target.value as any)}
-                  className="flex-1 px-2 py-1 text-xs border border-input rounded-md bg-background"
-                  data-testid="select-summary-channel"
-                >
-                  <option value="sms">{t.sms}</option>
-                  <option value="whatsapp">{t.whatsapp}</option>
-                  <option value="email">{t.emailCh}</option>
-                </select>
+                {/* channel selector is optional / commented */}
               </div>
               <Button
                 className="w-full bg-accent hover:bg-accent/90"
@@ -810,20 +824,22 @@ export default function TelehealthSection({
           <div className="flex flex-wrap gap-4">
             <Button
               className="bg-primary hover:bg-primary/90"
-              onClick={() => window.open(DOCTOR_HANDOFF_URL, "_blank")}
+              onClick={() =>
+                window.open("https://cal.com/nextviseai/30min", "_blank")
+              }
               data-testid="button-book-doctor"
             >
               <i className="fas fa-calendar-check mr-2"></i>
               {t.bookDoctor}
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               onClick={() => window.open(DOCTOR_HANDOFF_URL, "_blank")}
               data-testid="button-emergency"
             >
               <i className="fas fa-phone mr-2"></i>
               {t.emergencyConsult}
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>

@@ -37,7 +37,7 @@ export default function Home() {
           {/* Navigation & Language Selector */}
           <div className="flex items-center gap-4">
             {/* Health Assessment Link */}
-            <Link href="/health-assessment">
+            {/* <Link href="/health-assessment">
               <button 
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
                 data-testid="nav-health-assessment"
@@ -45,7 +45,7 @@ export default function Home() {
                 <i className="fas fa-brain"></i>
                 AI Health Assessment
               </button>
-            </Link>
+            </Link> */}
             
             {/* Language Selector */}
             <div className="flex items-center gap-2">
