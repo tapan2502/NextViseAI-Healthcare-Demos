@@ -343,7 +343,7 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               onClick={handleDownloadSummaryPdf}
               data-testid="button-download-summary"
             >
-              {t.downloadSummary ?? "Downlod"}
+              {t.downloadSummary ?? "Download"}
             </Button>
 
             <Button
