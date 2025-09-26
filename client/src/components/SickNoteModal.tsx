@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { jsPDF } from "jspdf"; // ⬅️ NEW
+import { jsPDF } from "jspdf";
 
 interface SickNoteModalProps {
   isOpen: boolean;
@@ -20,143 +18,244 @@ interface SickNoteModalProps {
   };
   t: any;
 }
+
 export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickNoteModalProps) {
   const { toast } = useToast();
+
   const [formData, setFormData] = useState({
     reason: "",
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: new Date().toISOString().split("T")[0],
     duration: 3,
     country: "DE",
     employerEmail: ""
   });
 
-  // ⬇️ NEW: helper to format lines nicely
-  const buildSummaryLines = () => {
-    return [
-      "Sick Note Summary",
-      `Generated: ${new Date().toLocaleString()}`,
-      "",
-      "Patient",
-      `• Name: ${contactData?.name ?? "-"}`,
-      `• Phone: ${contactData?.phone ?? "-"}`,
-      `• Email: ${contactData?.email ?? "-"}`,
-      "",
-      "Details",
-      `• Reason: ${formData.reason || "-"}`,
-      `• Start Date: ${formData.startDate}`,
-      `• Duration (days): ${formData.duration}`,
-      `• Country: ${formData.country}`,
-      `• Employer Email: ${formData.employerEmail || "-"}`,
-      "",
-      "Consent",
-      `• Provided: ${contactData?.consent ? "Yes" : "No"}`
-    ];
+  const handleInputChange = (field: string, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ⬇️ NEW: generate and download PDF on the fly
+  const buildSummary = () => ({
+    generatedAt: new Date().toLocaleString(),
+    patient: {
+      Name: contactData?.name ?? "-",
+      Phone: contactData?.phone ?? "-",
+      Email: contactData?.email ?? "-"
+    },
+    details: {
+      Reason: formData.reason || "-",
+      "Start Date": formData.startDate,
+      "Duration (days)": String(formData.duration),
+      Country: formData.country,
+      "Employer Email": formData.employerEmail || "-"
+    },
+    consent: {
+      Provided: contactData?.consent ? "Yes" : "No"
+    }
+  });
+
+  // ---------- PDF helpers (layout/formatting) ----------
+  const drawSectionHeader = (
+    doc: jsPDF,
+    title: string,
+    x: number,
+    y: number,
+    width: number
+  ) => {
+    // light grey label pill + divider line
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(x, y - 14, doc.getTextWidth(title) + 16, 24, 6, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(33, 37, 41);
+    doc.setFontSize(11.5);
+    doc.text(title, x + 8, y + 3);
+
+    doc.setDrawColor(230, 232, 236);
+    doc.setLineWidth(0.7);
+    doc.line(x, y + 10, x + width, y + 10);
+
+    return y + 24; // new y position
+  };
+
+  const addKeyValueGrid = (
+    doc: jsPDF,
+    entries: Record<string, string>,
+    x: number,
+    y: number,
+    width: number,
+    lineGap = 18
+  ) => {
+    const colGap = 24;
+    const colWidth = (width - colGap) / 2;
+    const keys = Object.keys(entries);
+    const values = Object.values(entries);
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(73, 80, 87);
+    doc.setFontSize(10.5);
+
+    // Left column keys
+    const leftKeys = keys.filter((_, i) => i % 2 === 0);
+    const rightKeys = keys.filter((_, i) => i % 2 === 1);
+
+    const leftVals = values.filter((_, i) => i % 2 === 0);
+    const rightVals = values.filter((_, i) => i % 2 === 1);
+
+    let yCursor = y;
+
+    const drawRow = (kx: number, k: string, v: string, yRow: number) => {
+      const keyY = yRow;
+      const valY = yRow + 12;
+
+      doc.setFont("helvetica", "bold");
+      doc.text(k, kx, keyY);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(52, 58, 64);
+      const wrapped = doc.splitTextToSize(v, colWidth);
+      wrapped.forEach((wLine: string, i: number) => {
+        doc.text(wLine, kx, valY + i * 14);
+      });
+
+      // return consumed height
+      return 12 + wrapped.length * 14 + 6;
+    };
+
+    const rows = Math.max(leftKeys.length, rightKeys.length);
+    for (let i = 0; i < rows; i++) {
+      // page break if needed
+      const pageHeight = doc.internal.pageSize.getHeight();
+      if (yCursor > pageHeight - 72) {
+        doc.addPage();
+        yCursor = 72;
+      }
+
+      const leftH = leftKeys[i]
+        ? drawRow(x, leftKeys[i], leftVals[i] ?? "", yCursor)
+        : 0;
+      const rightH = rightKeys[i]
+        ? drawRow(x + colWidth + colGap, rightKeys[i], rightVals[i] ?? "", yCursor)
+        : 0;
+
+      const rowHeight = Math.max(leftH, rightH, lineGap);
+      yCursor += rowHeight;
+    }
+
+    return yCursor;
+  };
+
+  const addParagraph = (doc: jsPDF, text: string, x: number, y: number, width: number) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(52, 58, 64);
+    doc.setFontSize(11);
+    const wrapped = doc.splitTextToSize(text, width);
+    wrapped.forEach((wLine: string, i: number) => {
+      doc.text(wLine, x, y + i * 14);
+    });
+    return y + wrapped.length * 14 + 2;
+  };
+
+  const addFooter = (doc: jsPDF, leftMargin: number, rightMargin: number) => {
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      const w = doc.internal.pageSize.getWidth();
+      const h = doc.internal.pageSize.getHeight();
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(134, 142, 150);
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        w - rightMargin,
+        h - 28,
+        { align: "right" }
+      );
+    }
+  };
+
+  // ---------- Build & download PDF, then close modal ----------
   const handleDownloadSummaryPdf = () => {
     try {
       const doc = new jsPDF({ unit: "pt", format: "a4" });
-      const left = 56;            // ~0.78in margin
-      const top = 56;
-      const lineGap = 18;
-      let y = top;
 
+      // Geometry
+      const left = 56;
+      const right = 56;
+      const top = 56;
+      const contentWidth = doc.internal.pageSize.getWidth() - left - right;
+
+      // Header band
+      doc.setFillColor(25, 135, 84); // green
+      doc.roundedRect(left, top - 8, contentWidth, 56, 10, 10, "F");
+
+      // Title + subtitle in header
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("Sick Note Summary", left, y);
-      y += 28;
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.text("Sick Note Summary", left + 16, top + 24);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, left + 16, top + 44);
 
-      const lines = buildSummaryLines();
-      // First line is title, already printed; skip it
-      const rest = lines.slice(1);
+      // Body start
+      let y = top + 80;
 
-      rest.forEach((line) => {
-        // wrap long lines nicely within page width
-        const maxWidth = doc.internal.pageSize.getWidth() - left * 2;
-        const wrapped = doc.splitTextToSize(line, maxWidth);
-        wrapped.forEach((wLine: string) => {
-          if (y > doc.internal.pageSize.getHeight() - top) {
-            doc.addPage();
-            y = top;
-          }
-          doc.text(wLine, left, y);
-          y += lineGap;
-        });
-      });
+      // Intro note (optional)
+      y = addParagraph(
+        doc,
+        "This document summarizes the information provided for the sick note.",
+        left,
+        y,
+        contentWidth
+      );
+      y += 6;
+
+      // Sections
+      y = drawSectionHeader(doc, "Patient", left, y, contentWidth);
+      y = addKeyValueGrid(doc, buildSummary().patient, left, y + 6, contentWidth);
+
+      y = drawSectionHeader(doc, "Details", left, y + 8, contentWidth);
+      y = addKeyValueGrid(doc, buildSummary().details, left, y + 6, contentWidth);
+
+      y = drawSectionHeader(doc, "Consent", left, y + 8, contentWidth);
+      y = addKeyValueGrid(doc, buildSummary().consent, left, y + 6, contentWidth);
+
+      // Signature box
+      const boxH = 80;
+      const pageH = doc.internal.pageSize.getHeight();
+      if (y + boxH + 80 > pageH) {
+        doc.addPage();
+        y = top;
+      }
+      doc.setDrawColor(230, 232, 236);
+      doc.roundedRect(left, y + 10, contentWidth, boxH, 8, 8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(73, 80, 87);
+      doc.text("Signature", left + 12, y + 30);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(134, 142, 150);
+      doc.text("Sign above the line", left + 12, y + boxH - 12);
+      // signature line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(left + 100, y + boxH - 16, left + contentWidth - 12, y + boxH - 16);
+
+      // Footer page numbers
+      addFooter(doc, left, right);
 
       const safeName = (contactData?.name || "patient").replace(/[^\w\-]+/g, "_");
       const fileName = `sick-note-summary_${formData.startDate}_${safeName}.pdf`;
       doc.save(fileName);
-    } catch (e) {
+
+      // ✅ Close popup after download
+      onClose();
+    } catch {
       toast({
         title: "PDF Error",
         description: "Could not generate the summary PDF.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
-  };
-
-  const generateSickNoteMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/telehealth/sick-note", {
-        contactData,
-        ...formData
-      });
-    },
-    onSuccess: async (response) => {
-      // If your API can return a PDF, prefer this:
-      // const blob = await response.blob();
-      // if (blob.type === "application/pdf") {
-      //   const url = URL.createObjectURL(blob);
-      //   const a = document.createElement("a");
-      //   a.href = url;
-      //   a.download = `sick-note_${formData.startDate}.pdf`;
-      //   a.click();
-      //   URL.revokeObjectURL(url);
-      // } else {
-      //   // fallback to HTML open
-      // }
-
-      // Current HTML behavior (unchanged)
-      const htmlContent = await response.text();
-      const blob = new Blob([htmlContent], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-
-      toast({
-        title: "Sick Note Generated",
-        description: "Medical certificate has been generated and opened in a new tab",
-      });
-      onClose();
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to generate sick note. Please try again.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleInputChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contactData.consent) {
-      toast({
-        title: "Consent Required",
-        description: "Please provide consent to generate medical documents.",
-        variant: "destructive",
-      });
-      return;
-    }
-    generateSickNoteMutation.mutate();
   };
 
   return (
@@ -164,12 +263,12 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
       <DialogContent className="w-full max-w-md" data-testid="sick-note-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <i className="fas fa-file-medical-alt text-secondary"></i>
+            <i className="fas fa-file-medical-alt text-secondary" />
             {t.snTitle}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form className="space-y-4">
           {/* Reason */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">{t.reason}</Label>
@@ -178,7 +277,7 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               rows={3}
               placeholder="Brief description of symptoms..."
               value={formData.reason}
-              onChange={(e) => handleInputChange('reason', e.target.value)}
+              onChange={(e) => handleInputChange("reason", e.target.value)}
               data-testid="textarea-reason"
             />
           </div>
@@ -190,7 +289,7 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               <Input
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                onChange={(e) => handleInputChange("startDate", e.target.value)}
                 data-testid="input-start-date"
               />
             </div>
@@ -201,7 +300,7 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
                 min={1}
                 max={30}
                 value={formData.duration}
-                onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 1)}
+                onChange={(e) => handleInputChange("duration", parseInt(e.target.value) || 1)}
                 data-testid="input-duration"
               />
             </div>
@@ -212,7 +311,7 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
             <Label className="text-sm font-medium text-foreground">{t.country}</Label>
             <select
               value={formData.country}
-              onChange={(e) => handleInputChange('country', e.target.value)}
+              onChange={(e) => handleInputChange("country", e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
               data-testid="select-country"
             >
@@ -230,30 +329,21 @@ export default function SickNoteModal({ isOpen, onClose, contactData, t }: SickN
               type="email"
               placeholder="hr@company.com"
               value={formData.employerEmail}
-              onChange={(e) => handleInputChange('employerEmail', e.target.value)}
+              onChange={(e) => handleInputChange("employerEmail", e.target.value)}
               data-testid="input-employer-email"
             />
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <Button
-              type="submit"
-              className="flex-1 bg-secondary hover:bg-secondary/90"
-              disabled={generateSickNoteMutation.isPending}
-              data-testid="button-create-sick-note"
-            >
-              {generateSickNoteMutation.isPending ? "Creating..." : t.create}
-            </Button>
-
-            {/* ⬇️ NEW: Download summary PDF */}
+            {/* Green Downlod button */}
             <Button
               type="button"
-              variant="outline"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               onClick={handleDownloadSummaryPdf}
               data-testid="button-download-summary"
             >
-              {t.downloadSummary ?? "Download Summary PDF"}
+              {t.downloadSummary ?? "Downlod"}
             </Button>
 
             <Button
